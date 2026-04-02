@@ -119,7 +119,7 @@ class IBKRClient:
 
     def fetch_chain(self, expiry: str) -> list[dict]:
         """
-        Fetches SPX 0DTE options chain for the given expiry (YYYYMMDD).
+        Fetches SPX options chain for the given expiry (YYYYMMDD).
         Returns list of {strike, right, bid, ask, iv, delta} dicts.
         Limits to ±50 strikes around ATM for performance.
         """

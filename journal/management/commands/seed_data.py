@@ -1,7 +1,7 @@
 """
 management/commands/seed_data.py
 
-Populate the database with 30 days of realistic SPX 0DTE trading data.
+Populate the database with 30 days of realistic SPX trading data.
 Usage:  python manage.py seed_data [--reset]
 """
 import random
@@ -239,7 +239,7 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------
 
     def _make_trade(self, trade_date: date, session: TradingSession) -> Trade:
-        """Create a single realistic SPX 0DTE trade."""
+        """Create a single realistic SPX trade."""
         spx_base = random.randint(4400, 5500)
         otm_offset = random.choice([-30, -20, -10, 10, 20, 30, 50])
         strike = Decimal(str(spx_base + otm_offset))
@@ -249,7 +249,7 @@ class Command(BaseCommand):
         opt_type   = OptionType.CALL      if is_call else OptionType.PUT
         qty        = random.randint(1, 2)
 
-        # Entry: realistic 0DTE premium
+        # Entry: realistic premium
         entry_price = Decimal(str(round(random.uniform(0.5, 8.0), 2)))
         entry_hour  = random.randint(9, 13)
         entry_min   = random.randint(0, 59)
@@ -286,7 +286,7 @@ class Command(BaseCommand):
             symbol      = 'SPX',
             option_type = opt_type,
             strike      = strike,
-            expiry      = trade_date,      # 0DTE
+            expiry      = trade_date,
             quantity    = qty,
             entry_price = entry_price,
             exit_price  = exit_price,

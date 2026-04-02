@@ -1,20 +1,23 @@
 # Trading Journal
 
-A personal trading journal built with Django for tracking options trades on your local machine.
+A personal SPX options trading journal built with Django. Bloomberg-inspired dark UI, runs entirely on your local machine.
 
 ## Features
 
-- Trade log with filtering, CSV import/export, and R:R calculation
-- Session-based daily view with pre-trade checklist and psych tracking
-- Calendar with green/red P&L backgrounds
-- Analytics dashboard (win rate by tag, P&L by day of week, drawdown, etc.)
-- IBKR/TWS integration for live Greeks
-- Performance review and goal tracking
+- **Trade log** — filter by date, type, status, tag; CSV import/export; R:R display
+- **Sessions** — daily pre-market notes, psych/bias tracking, per-session checklist
+- **Calendar** — monthly P&L overview with green/red cell tinting
+- **Analytics** — cumulative P&L, win rate by tag, P&L by day of week, drawdown, monthly breakdown, performance review
+- **Journal** — free-form markdown entries linked to trades or sessions
+- **Goals** — set and track performance targets with progress bars
+- **IBKR/TWS integration** — live Greeks via Interactive Brokers API, option chain viewer
+- **Settings** — manage checklist templates
 
 ## Stack
 
 - Python 3.11 · Django 5.2 · SQLite
-- Tailwind CSS · Alpine.js · HTMX · Chart.js
+- Tailwind CSS (CDN) · Alpine.js · HTMX · Chart.js · Lucide Icons
+- EasyMDE (markdown editor) · IBM Plex Mono (numbers)
 
 ## Setup
 
