@@ -1,6 +1,6 @@
 # Trading Journal
 
-A personal trading journal built with Django for tracking options trades.
+A personal trading journal built with Django for tracking options trades on your local machine.
 
 ## Features
 
