@@ -1,242 +1,267 @@
 {% extends "base.html" %}
 {% load humanize journal_extras %}
-{% block title %}
-Dashboard{% endblock %} {% block page_title %}Dashboard{% endblock %} {% block content %}
-<div class="space-y-6" x-data>
-  <!-- ===== Top stat cards ===== -->
-  <div class="grid grid-cols-4 gap-4">
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-5" x-data>
+
+  <!-- ══════════════════════════════════════════════
+       ROW 1 — Stat cards
+  ══════════════════════════════════════════════ -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in" style="animation-delay:0ms;">
+
     <!-- Today P&L -->
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-4">
-      <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">
-        Today P&L
-      </p>
-      <p
-        class="text-2xl font-bold {% if today_pnl >= 0 %}text-profit{% else %}text-loss{% endif %}"
-      >
+    <div class="card p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-widest" style="color:var(--text-secondary);">Today P&amp;L</span>
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+          style="background:{% if today_pnl >= 0 %}var(--profit-glow){% else %}var(--loss-glow){% endif %};">
+          <i data-lucide="{% if today_pnl >= 0 %}trending-up{% else %}trending-down{% endif %}"
+             style="width:15px;height:15px;color:{% if today_pnl >= 0 %}var(--profit){% else %}var(--loss){% endif %};"></i>
+        </span>
+      </div>
+      <p class="mono text-2xl font-semibold leading-none {% if today_pnl >= 0 %}text-profit{% else %}text-loss{% endif %}">
         {{ today_pnl|pnl_str }}
       </p>
     </div>
 
     <!-- Win Rate 30d -->
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-4">
-      <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">
-        Win Rate (30d)
-      </p>
-      <p class="text-2xl font-bold text-slate-200">{{ win_rate_30d }}%</p>
+    <div class="card p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-widest" style="color:var(--text-secondary);">Win Rate (30d)</span>
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow);">
+          <i data-lucide="percent" style="width:15px;height:15px;color:var(--accent);"></i>
+        </span>
+      </div>
+      <p class="mono text-2xl font-semibold leading-none" style="color:var(--text-primary);">{{ win_rate_30d }}%</p>
     </div>
 
     <!-- Avg R:R -->
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-4">
-      <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">
-        Avg R:R (30d)
-      </p>
-      <p class="text-2xl font-bold text-slate-200">
-        {% if avg_rr %}{{ avg_rr }}{% else %}<span class="text-slate-500"
-          >—</span
-        >{% endif %}
+    <div class="card p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-widest" style="color:var(--text-secondary);">Avg R:R (30d)</span>
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow);">
+          <i data-lucide="scale" style="width:15px;height:15px;color:var(--accent);"></i>
+        </span>
+      </div>
+      <p class="mono text-2xl font-semibold leading-none" style="color:var(--text-primary);">
+        {% if avg_rr %}{{ avg_rr }}{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
       </p>
     </div>
 
     <!-- Streak -->
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-4">
-      <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">
-        Current Streak
-      </p>
-      <p
-        class="text-2xl font-bold {% if streak_type == 'WIN' %}text-profit{% elif streak_type == 'LOSS' %}text-loss{% else %}text-slate-400{% endif %}"
-      >
-        {% if streak > 0 %} {{ streak }}{{ streak_type|slice:":1" }} {% else %}
-        <span class="text-slate-500">—</span>
-        {% endif %}
+    <div class="card p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-widest" style="color:var(--text-secondary);">Streak</span>
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+          style="background:{% if streak_type == 'WIN' %}var(--profit-glow){% elif streak_type == 'LOSS' %}var(--loss-glow){% else %}rgba(148,163,184,0.08){% endif %};">
+          <i data-lucide="zap"
+             style="width:15px;height:15px;color:{% if streak_type == 'WIN' %}var(--profit){% elif streak_type == 'LOSS' %}var(--loss){% else %}var(--text-secondary){% endif %};"></i>
+        </span>
+      </div>
+      <p class="mono text-2xl font-semibold leading-none
+        {% if streak_type == 'WIN' %}text-profit{% elif streak_type == 'LOSS' %}text-loss{% else %}text-neutral{% endif %}">
+        {% if streak > 0 %}{{ streak }}{{ streak_type|slice:":1" }}{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
       </p>
     </div>
   </div>
 
-  <!-- ===== Second row ===== -->
-  <div class="grid grid-cols-3 gap-6">
-    <!-- Today's Session card -->
-    <div class="col-span-2 bg-[#161b27] rounded-xl border border-white/5 p-5">
+  <!-- ══════════════════════════════════════════════
+       ROW 2 — Session + Checklist
+  ══════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 animate-in" style="animation-delay:60ms;">
+
+    <!-- Today's Session -->
+    <div class="card p-5 lg:col-span-2">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-slate-200">
-          Today's Session — {{ session.date|date:"l, N j" }}
-        </h2>
-        <span
-          class="text-xs px-2 py-0.5 rounded-full border {% if session.market_bias == 'BULLISH' %}border-profit/40 text-profit {% elif session.market_bias == 'BEARISH' %}border-loss/40 text-loss {% else %}border-neutral/40 text-neutral{% endif %}"
-        >
+        <div class="flex items-center gap-2">
+          <i data-lucide="calendar-days" style="width:15px;height:15px;color:var(--text-secondary);"></i>
+          <h2 class="text-sm font-semibold" style="color:var(--text-primary);">
+            Today's Session
+            <span class="font-normal ml-1" style="color:var(--text-secondary);">{{ session.date|date:"l, N j" }}</span>
+          </h2>
+        </div>
+        <span class="text-xs px-2.5 py-0.5 rounded-full border font-medium
+          {% if session.market_bias == 'BULLISH' %}text-profit{% elif session.market_bias == 'BEARISH' %}text-loss{% else %}text-neutral{% endif %}"
+          style="border-color:{% if session.market_bias == 'BULLISH' %}rgba(16,185,129,0.3){% elif session.market_bias == 'BEARISH' %}rgba(244,63,94,0.3){% else %}rgba(148,163,184,0.3){% endif %};
+                 background:{% if session.market_bias == 'BULLISH' %}var(--profit-glow){% elif session.market_bias == 'BEARISH' %}var(--loss-glow){% else %}rgba(148,163,184,0.08){% endif %};">
           {{ session.market_bias }}
         </span>
       </div>
 
-      <!-- Psych state -->
-      <div class="flex items-center gap-2 mb-3">
-        <span class="text-xs text-slate-500">Mindset:</span>
+      <!-- Psych + VIX -->
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-xs mr-1" style="color:var(--text-secondary);">Mindset</span>
         {% for i in "12345" %}
-        <span
-          class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium cursor-default {% if forloop.counter <= session.psychological_state %} {% if session.psychological_state >= 4 %}bg-profit/20 text-profit {% elif session.psychological_state == 3 %}bg-neutral/20 text-neutral {% else %}bg-loss/20 text-loss{% endif %} {% else %}bg-white/5 text-slate-600{% endif %}"
-        >
+        <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold cursor-default
+          {% if forloop.counter <= session.psychological_state %}
+            {% if session.psychological_state >= 4 %}bg-profit/20 text-profit
+            {% elif session.psychological_state == 3 %}bg-neutral/20 text-neutral
+            {% else %}bg-loss/20 text-loss{% endif %}
+          {% else %}bg-white/5{% endif %}"
+          style="{% if not forloop.counter <= session.psychological_state %}color:var(--text-muted);{% endif %}">
           {{ forloop.counter }}
         </span>
-        {% endfor %} {% if session.vix_level %}
-        <span class="ml-4 text-xs text-slate-500"
-          >VIX <span class="text-slate-300">{{ session.vix_level }}</span></span
-        >
+        {% endfor %}
+        {% if session.vix_level %}
+        <span class="ml-3 text-xs" style="color:var(--text-secondary);">
+          VIX <span class="mono font-medium" style="color:var(--text-primary);">{{ session.vix_level }}</span>
+        </span>
         {% endif %}
       </div>
 
       <!-- Market notes -->
       {% if session.market_open_notes %}
-      <p
-        class="text-sm text-slate-400 bg-white/3 rounded-lg px-3 py-2 mb-3 line-clamp-3"
-      >
+      <p class="text-sm rounded-lg px-3 py-2.5 mb-4 line-clamp-3 border"
+         style="color:var(--text-secondary);background:rgba(255,255,255,0.02);border-color:var(--border);">
         {{ session.market_open_notes }}
       </p>
       {% endif %}
 
       <!-- Today's trades -->
-      <div class="mt-4">
+      <div>
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-medium text-slate-400">Today's Trades</span>
-          <a
-            href="{% url 'session_detail' session.date|date:'Y-m-d' %}"
-            class="text-xs text-accent hover:underline"
-            >Full session →</a
-          >
+          <span class="text-xs font-medium" style="color:var(--text-secondary);">Today's Trades</span>
+          <a href="{% url 'session_detail' session.date|date:'Y-m-d' %}"
+             class="text-xs text-accent hover:underline flex items-center gap-1">
+            Full session <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
+          </a>
         </div>
         {% if open_trades %}
-        <div class="space-y-1">
+        <div class="space-y-1.5">
           {% for trade in open_trades %}
-          <div
-            class="flex items-center justify-between px-3 py-2 bg-white/3 rounded-lg text-sm"
-          >
-            <span class="text-slate-300"
-              >{{ trade.symbol }} {{ trade.option_type }} {{ trade.strike }}
-              <span class="text-slate-500 text-xs"
-                >{{ trade.trade_type }}</span
-              ></span
-            >
-            <span class="text-xs px-2 py-0.5 rounded bg-neutral/15 text-neutral"
-              >OPEN</span
-            >
+          <div class="flex items-center justify-between px-3 py-2 rounded-lg border text-sm"
+               style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+            <span class="font-medium" style="color:var(--text-primary);">
+              {{ trade.symbol }} {{ trade.option_type }} <span class="mono">{{ trade.strike }}</span>
+              <span class="text-xs ml-1" style="color:var(--text-secondary);">{{ trade.trade_type }}</span>
+            </span>
+            <span class="text-xs px-2 py-0.5 rounded font-medium mono"
+                  style="background:var(--accent-glow);color:var(--accent);">OPEN</span>
           </div>
           {% endfor %}
         </div>
         {% else %}
-        <p class="text-sm text-slate-600 italic">No open trades</p>
+        <p class="text-sm italic" style="color:var(--text-muted);">No open trades</p>
         {% endif %}
       </div>
     </div>
 
-    <!-- Pre-trade Checklist widget -->
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+    <!-- Pre-Trade Checklist -->
+    <div class="card p-5">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-slate-200">
-          Pre-Trade Checklist
-        </h2>
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-square" style="width:15px;height:15px;color:var(--text-secondary);"></i>
+          <h2 class="text-sm font-semibold" style="color:var(--text-primary);">Pre-Trade Checklist</h2>
+        </div>
         {% if daily_routine.checklist_template %}
-        <span id="checklist-pct" class="text-xs text-slate-500"
-          >{{ daily_routine.completion_percent }}%</span
-        >
+        <span id="checklist-pct" class="mono text-xs font-medium" style="color:var(--text-secondary);">
+          {{ daily_routine.completion_percent }}%
+        </span>
         {% endif %}
       </div>
 
       {% if daily_routine.checklist_template %}
       <!-- Progress bar -->
-      <div class="w-full h-1.5 bg-white/5 rounded-full mb-4">
-        <div
-          id="checklist-bar"
-          class="h-1.5 rounded-full bg-accent transition-all duration-300"
-          style="width: {{ daily_routine.completion_percent }}%"
-        ></div>
+      <div class="w-full h-1 rounded-full mb-4" style="background:var(--border);">
+        <div id="checklist-bar"
+             class="h-1 rounded-full transition-all duration-500"
+             style="width:{{ daily_routine.completion_percent }}%;background:var(--accent);"></div>
       </div>
 
       <!-- Items grouped by category -->
-      <div id="checklist-item-list">
-      {% regroup daily_routine.checklist_template.items by category as grouped_items %} {% for group in grouped_items %} {% if group.grouper %}
-      <p class="text-xs text-slate-500 uppercase tracking-wider mt-3 mb-1.5">
-        {{ group.grouper }}
-      </p>
-      {% endif %} {% for item in group.list %} {% include "components/checklist_item.html" with item=item checked=daily_routine.completed_items|default_if_none:"{}"|get_item:item.id session=session %} {% endfor %} {% endfor %}
-      </div> {% else %}
-      <p class="text-sm text-slate-500">
+      <div id="checklist-item-list" class="space-y-0.5 overflow-y-auto" style="max-height: 340px;">
+        {% regroup daily_routine.checklist_template.items by category as grouped_items %}
+        {% for group in grouped_items %}
+          {% if group.grouper %}
+          <p class="text-xs uppercase tracking-widest pt-3 pb-1" style="color:var(--text-muted);">{{ group.grouper }}</p>
+          {% endif %}
+          {% for item in group.list %}
+            {% include "components/checklist_item.html" with item=item checked=daily_routine.completed_items|default_if_none:"{}"|get_item:item.id session=session %}
+          {% endfor %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm" style="color:var(--text-secondary);">
         No active checklist template.
-        <a
-          href="{% url 'settings_checklist' %}"
-          class="text-accent hover:underline"
-          >Create one →</a
-        >
+        <a href="{% url 'settings_checklist' %}" class="text-accent hover:underline">Create one →</a>
       </p>
       {% endif %}
     </div>
   </div>
 
-  <!-- ===== Third row: stats + recent journal ===== -->
-  <div class="grid grid-cols-3 gap-6">
-    <!-- Best / Worst setup tags -->
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h2 class="text-sm font-semibold text-slate-200 mb-4">
-        Setup Tags (30d)
-      </h2>
+  <!-- ══════════════════════════════════════════════
+       ROW 3 — Tags + Recent Journal
+  ══════════════════════════════════════════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 animate-in" style="animation-delay:120ms;">
+
+    <!-- Setup Tags -->
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="tag" style="width:15px;height:15px;color:var(--text-secondary);"></i>
+        <h2 class="text-sm font-semibold" style="color:var(--text-primary);">Setup Tags (30d)</h2>
+      </div>
       {% if tag_stats.best_tag %}
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-xs text-slate-500">Best</span>
-        <span
-          class="text-xs font-medium text-profit bg-profit/10 px-2 py-0.5 rounded"
-          >{{ tag_stats.best_tag }}</span
-        >
+      <div class="flex items-center justify-between mb-2.5">
+        <span class="text-xs flex items-center gap-1.5" style="color:var(--text-secondary);">
+          <i data-lucide="arrow-up-circle" style="width:12px;height:12px;color:var(--profit);"></i> Best
+        </span>
+        <span class="text-xs font-medium px-2.5 py-1 rounded text-profit" style="background:var(--profit-glow);">
+          {{ tag_stats.best_tag }}
+        </span>
       </div>
-      {% endif %} {% if tag_stats.worst_tag %}
+      {% endif %}
+      {% if tag_stats.worst_tag %}
       <div class="flex items-center justify-between">
-        <span class="text-xs text-slate-500">Worst</span>
-        <span
-          class="text-xs font-medium text-loss bg-loss/10 px-2 py-0.5 rounded"
-          >{{ tag_stats.worst_tag }}</span
-        >
+        <span class="text-xs flex items-center gap-1.5" style="color:var(--text-secondary);">
+          <i data-lucide="arrow-down-circle" style="width:12px;height:12px;color:var(--loss);"></i> Worst
+        </span>
+        <span class="text-xs font-medium px-2.5 py-1 rounded text-loss" style="background:var(--loss-glow);">
+          {{ tag_stats.worst_tag }}
+        </span>
       </div>
-      {% endif %} {% if not tag_stats.best_tag and not tag_stats.worst_tag %}
-      <p class="text-sm text-slate-600 italic">No tagged trades yet</p>
+      {% endif %}
+      {% if not tag_stats.best_tag and not tag_stats.worst_tag %}
+      <p class="text-sm italic" style="color:var(--text-muted);">No tagged trades yet</p>
       {% endif %}
     </div>
 
-    <!-- Recent journal entries -->
-    <div class="col-span-2 bg-[#161b27] rounded-xl border border-white/5 p-5">
+    <!-- Recent Journal -->
+    <div class="card p-5 lg:col-span-2">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-slate-200">Recent Journal</h2>
-        <a
-          href="{% url 'journal_list' %}"
-          class="text-xs text-accent hover:underline"
-          >All entries →</a
-        >
+        <div class="flex items-center gap-2">
+          <i data-lucide="book-open" style="width:15px;height:15px;color:var(--text-secondary);"></i>
+          <h2 class="text-sm font-semibold" style="color:var(--text-primary);">Recent Journal</h2>
+        </div>
+        <a href="{% url 'journal_list' %}" class="text-xs text-accent hover:underline flex items-center gap-1">
+          All entries <i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
+        </a>
       </div>
       {% if recent_journal %}
-      <div class="space-y-2">
+      <div class="space-y-1.5">
         {% for entry in recent_journal %}
-        <a
-          href="{% url 'journal_detail' entry.pk %}"
-          class="block px-3 py-2 bg-white/3 rounded-lg hover:bg-white/5 transition-colors group"
-        >
-          <div class="flex items-center gap-2">
-            <span class="text-xs px-1.5 py-0.5 rounded bg-accent/10 text-accent"
-              >{{ entry.entry_type }}</span
-            >
-            <span class="text-sm text-slate-200 group-hover:text-white truncate"
-              >{{ entry.title }}</span
-            >
-            <span class="ml-auto text-xs text-slate-600 flex-shrink-0"
-              >{{ entry.created_at|date:"M j" }}</span
-            >
-          </div>
+        <a href="{% url 'journal_detail' entry.pk %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors group"
+           style="border-color:var(--border);background:rgba(255,255,255,0.015);"
+           onmouseover="this.style.background='rgba(255,255,255,0.04)'"
+           onmouseout="this.style.background='rgba(255,255,255,0.015)'">
+          <span class="text-xs px-2 py-0.5 rounded font-medium flex-shrink-0" style="background:var(--accent-glow);color:var(--accent);">
+            {{ entry.entry_type }}
+          </span>
+          <span class="text-sm truncate flex-1" style="color:var(--text-primary);">{{ entry.title }}</span>
+          <span class="mono text-xs flex-shrink-0" style="color:var(--text-secondary);">{{ entry.created_at|date:"M j" }}</span>
         </a>
         {% endfor %}
       </div>
       {% else %}
-      <p class="text-sm text-slate-600 italic">
+      <p class="text-sm italic" style="color:var(--text-muted);">
         No journal entries yet.
-        <a href="{% url 'journal_new' %}" class="text-accent hover:underline"
-          >Write one →</a
-        >
+        <a href="{% url 'journal_new' %}" class="text-accent hover:underline">Write one →</a>
       </p>
       {% endif %}
     </div>
   </div>
+
 </div>
 {% endblock %}

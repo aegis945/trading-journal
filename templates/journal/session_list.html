@@ -1,65 +1,66 @@
 {% extends "base.html" %}
 {% load journal_extras %}
-{% block title %}
-Sessions{% endblock %} {% block page_title %}Sessions{% endblock %} {% block content %}
-<div class="bg-[#161b27] rounded-xl border border-white/5 overflow-hidden">
+{% block title %}Sessions{% endblock %}
+{% block page_title %}Sessions{% endblock %}
+{% block content %}
+
+<div class="card overflow-hidden animate-in">
   <table class="w-full text-sm">
     <thead>
-      <tr
-        class="border-b border-white/5 text-xs text-slate-500 uppercase tracking-wider"
-      >
-        <th class="px-4 py-3 text-left">Date</th>
-        <th class="px-4 py-3 text-center">Bias</th>
-        <th class="px-4 py-3 text-center">Mindset</th>
-        <th class="px-4 py-3 text-right">Trades</th>
-        <th class="px-4 py-3 text-right">P&L</th>
+      <tr style="border-bottom:1px solid var(--border);">
+        <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">Date</th>
+        <th class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">Bias</th>
+        <th class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">Mindset</th>
+        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">Trades</th>
+        <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">P&amp;L</th>
         <th class="px-4 py-3"></th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-white/3">
+    <tbody>
       {% for session in sessions %}
-      <tr class="hover:bg-white/2 transition-colors">
-        <td class="px-4 py-3 font-medium text-slate-200">
+      <tr class="transition-colors animate-in" style="border-bottom:1px solid var(--border); animation-delay:{{ forloop.counter0 }}0ms"
+          onmouseover="this.style.background='var(--bg-elevated)'" onmouseout="this.style.background=''">
+        <td class="px-4 py-3 font-medium" style="color:var(--text-primary)">
           {{ session.date|date:"D, N j Y" }}
         </td>
         <td class="px-4 py-3 text-center">
-          <span
-            class="text-xs px-2 py-0.5 rounded-full border {% if session.market_bias == 'BULLISH' %}border-profit/30 text-profit {% elif session.market_bias == 'BEARISH' %}border-loss/30 text-loss {% else %}border-neutral/30 text-neutral{% endif %}"
-          >
+          <span class="text-xs px-2 py-0.5 rounded-full"
+            style="{% if session.market_bias == 'BULLISH' %}background:var(--profit-glow);color:var(--profit);border:1px solid rgba(16,185,129,0.25){% elif session.market_bias == 'BEARISH' %}background:var(--loss-glow);color:var(--loss);border:1px solid rgba(244,63,94,0.25){% else %}background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border){% endif %}">
             {{ session.market_bias }}
           </span>
         </td>
         <td class="px-4 py-3 text-center">
-          <span
-            class="text-sm font-medium {% if session.psychological_state >= 4 %}text-profit {% elif session.psychological_state == 3 %}text-neutral {% else %}text-loss{% endif %}"
-          >
+          <span class="mono font-semibold"
+            style="color:{% if session.psychological_state >= 4 %}var(--profit){% elif session.psychological_state == 3 %}var(--neutral){% else %}var(--loss){% endif %}">
             {{ session.psychological_state }}/5
           </span>
         </td>
-        <td class="px-4 py-3 text-right text-slate-400">
+        <td class="px-4 py-3 text-right mono" style="color:var(--text-secondary)">
           {{ session.trade_count }}
         </td>
-        <td
-          class="px-4 py-3 text-right font-semibold {{ session.total_pnl|pnl_color }}"
-        >
-          {% if session.total_pnl != 0 %}{{ session.total_pnl|pnl_str }}{% else %}<span class="text-slate-600">—</span>{% endif %}
+        <td class="px-4 py-3 text-right mono font-semibold"
+          style="color:{% if session.total_pnl > 0 %}var(--profit){% elif session.total_pnl < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
+          {% if session.total_pnl != 0 %}{{ session.total_pnl|pnl_str }}{% else %}—{% endif %}
         </td>
         <td class="px-4 py-3 text-right">
-          <a
-            href="{% url 'session_detail' session.date|date:'Y-m-d' %}"
-            class="text-xs text-accent hover:underline"
-            >View →</a
-          >
+          <a href="{% url 'session_detail' session.date|date:'Y-m-d' %}"
+            class="text-xs font-medium transition-colors"
+            style="color:var(--accent)"
+            onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">
+            View &rarr;
+          </a>
         </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="px-4 py-12 text-center text-slate-600">
-          No sessions yet.
+        <td colspan="6" class="px-4 py-16 text-center" style="color:var(--text-muted)">
+          <i data-lucide="calendar-x" class="mx-auto mb-3" style="width:32px;height:32px;opacity:0.4"></i>
+          <p class="text-sm">No sessions yet.</p>
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
 {% endblock %}

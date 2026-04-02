@@ -1,44 +1,62 @@
 {% extends "base.html" %}
-{% block title %}
-Settings{% endblock %} {% block page_title %}Settings{% endblock %} {% block content %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-  <a
-    href="{% url 'settings_checklist' %}"
-    class="bg-[#161b27] rounded-xl border border-white/5 p-5 hover:border-accent/30 transition-colors group"
-  >
-    <div class="text-lg mb-1 text-accent">☑</div>
-    <p class="text-sm font-medium text-slate-200">Pre-Trade Checklist</p>
-    <p class="text-xs text-slate-500 mt-1">
-      Manage checklist templates and default items
-    </p>
+
+  <a href="{% url 'settings_checklist' %}"
+    class="card p-5 flex items-start gap-4 transition-colors animate-in"
+    style="animation-delay:0ms"
+    onmouseover="this.style.borderColor='rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
+      <i data-lucide="list-checks" style="width:18px;height:18px;color:var(--accent)"></i>
+    </div>
+    <div>
+      <p class="text-sm font-medium" style="color:var(--text-primary)">Pre-Trade Checklist</p>
+      <p class="text-xs mt-1" style="color:var(--text-secondary)">Manage checklist templates and default items</p>
+    </div>
   </a>
-  <a
-    href="{% url 'goals' %}"
-    class="bg-[#161b27] rounded-xl border border-white/5 p-5 hover:border-accent/30 transition-colors group"
-  >
-    <div class="text-lg mb-1 text-accent">🎯</div>
-    <p class="text-sm font-medium text-slate-200">Performance Goals</p>
-    <p class="text-xs text-slate-500 mt-1">
-      Set win-rate, P&amp;L, and streak targets
-    </p>
+
+  <a href="{% url 'goals' %}"
+    class="card p-5 flex items-start gap-4 transition-colors animate-in"
+    style="animation-delay:40ms"
+    onmouseover="this.style.borderColor='rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
+      <i data-lucide="target" style="width:18px;height:18px;color:var(--accent)"></i>
+    </div>
+    <div>
+      <p class="text-sm font-medium" style="color:var(--text-primary)">Performance Goals</p>
+      <p class="text-xs mt-1" style="color:var(--text-secondary)">Set win-rate, P&amp;L, and streak targets</p>
+    </div>
   </a>
-  <a
-    href="{% url 'ibkr_settings' %}"
-    class="bg-[#161b27] rounded-xl border border-white/5 p-5 hover:border-accent/30 transition-colors group"
-  >
-    <div class="text-lg mb-1 text-accent">🔌</div>
-    <p class="text-sm font-medium text-slate-200">IBKR Connection</p>
-    <p class="text-xs text-slate-500 mt-1">TWS host / port / client ID</p>
+
+  <a href="{% url 'ibkr_settings' %}"
+    class="card p-5 flex items-start gap-4 transition-colors animate-in"
+    style="animation-delay:80ms"
+    onmouseover="this.style.borderColor='rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
+      <i data-lucide="plug" style="width:18px;height:18px;color:var(--accent)"></i>
+    </div>
+    <div>
+      <p class="text-sm font-medium" style="color:var(--text-primary)">IBKR Connection</p>
+      <p class="text-xs mt-1" style="color:var(--text-secondary)">TWS host / port / client ID</p>
+    </div>
   </a>
-  <a
-    href="{% url 'import_upload' %}"
-    class="bg-[#161b27] rounded-xl border border-white/5 p-5 hover:border-accent/30 transition-colors group"
-  >
-    <div class="text-lg mb-1 text-accent">📥</div>
-    <p class="text-sm font-medium text-slate-200">Import Trades</p>
-    <p class="text-xs text-slate-500 mt-1">
-      Upload IBKR Activity Statement CSV
-    </p>
+
+  <a href="{% url 'import_upload' %}"
+    class="card p-5 flex items-start gap-4 transition-colors animate-in"
+    style="animation-delay:120ms"
+    onmouseover="this.style.borderColor='rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
+      <i data-lucide="upload" style="width:18px;height:18px;color:var(--accent)"></i>
+    </div>
+    <div>
+      <p class="text-sm font-medium" style="color:var(--text-primary)">Import Trades</p>
+      <p class="text-xs mt-1" style="color:var(--text-secondary)">Upload IBKR Activity Statement CSV</p>
+    </div>
   </a>
+
 </div>
+
 {% endblock %}

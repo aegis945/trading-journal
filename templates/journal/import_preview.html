@@ -1,79 +1,71 @@
 {% extends "base.html" %}
-{% block title %}
-Import Preview{% endblock %} {% block page_title %}Import Preview{% endblock %} {% block content %}
-<div class="space-y-4">
-  <div
-    class="bg-[#161b27] rounded-xl border border-white/5 p-4 flex items-center justify-between"
-  >
-    <p class="text-sm text-slate-300">
-      {{ rows|length }} trade{{ rows|length|pluralize }} parsed
+{% block title %}Import Preview{% endblock %}
+{% block page_title %}Import Preview{% endblock %}
+{% block content %}
+
+<div class="space-y-5">
+
+  <div class="card p-4 flex items-center justify-between animate-in">
+    <p class="text-sm" style="color:var(--text-primary)">
+      <span class="mono font-semibold" style="color:var(--accent)">{{ rows|length }}</span>
+      trade{{ rows|length|pluralize }} parsed
     </p>
     <div class="flex gap-3">
-      <a
-        href="{% url 'import_upload' %}"
-        class="px-3 py-1.5 text-xs border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
-        >Back</a
-      >
+      <a href="{% url 'import_upload' %}"
+        class="px-3 py-1.5 text-xs rounded-lg transition-colors"
+        style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+        onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Back</a>
       <form method="POST" action="{% url 'import_confirm' %}">
         {% csrf_token %}
         <input type="hidden" name="session_key" value="{{ session_key }}" />
-        <button
-          type="submit"
-          class="px-3 py-1.5 text-xs bg-accent hover:bg-blue-600 text-white rounded-lg"
-        >
-          Confirm Import
+        <button type="submit"
+          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+          style="background:var(--accent);color:#fff"
+          onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+          <i data-lucide="check" style="width:12px;height:12px"></i> Confirm Import
         </button>
       </form>
     </div>
   </div>
 
-  <div class="overflow-x-auto">
-    <table class="w-full text-xs text-slate-300">
+  <div class="card overflow-x-auto animate-in" style="animation-delay:40ms">
+    <table class="w-full text-xs">
       <thead>
-        <tr class="border-b border-white/5 text-slate-500">
-          <th class="pb-2 text-left">Date</th>
-          <th class="pb-2 text-left">Symbol</th>
-          <th class="pb-2 text-right">Type</th>
-          <th class="pb-2 text-right">Strike</th>
-          <th class="pb-2 text-right">Expiry</th>
-          <th class="pb-2 text-right">Qty</th>
-          <th class="pb-2 text-right">Entry</th>
-          <th class="pb-2 text-right">Exit</th>
-          <th class="pb-2 text-right">P&amp;L</th>
-          <th class="pb-2 text-right">Status</th>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th class="px-3 py-2.5 text-left font-medium uppercase tracking-wider" style="color:var(--text-muted)">Date</th>
+          <th class="px-3 py-2.5 text-left font-medium uppercase tracking-wider" style="color:var(--text-muted)">Symbol</th>
+          <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Type</th>
+          <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Strike</th>
+          <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Expiry</th>
+          <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Qty</th>
+          <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Entry</th>
+          <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Exit</th>
+          <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">P&amp;L</th>
+          <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Status</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-white/5">
+      <tbody>
         {% for row in rows %}
-        <tr class="hover:bg-white/3">
-          <td class="py-1.5">{{ row.trade_date|default:"-" }}</td>
-          <td class="py-1.5 font-mono">{{ row.symbol|default:"SPX" }}</td>
-          <td class="py-1.5 text-right">{{ row.option_type|default:"-" }}</td>
-          <td class="py-1.5 text-right font-mono">
-            {{ row.strike_price|default:"-" }}
-          </td>
-          <td class="py-1.5 text-right font-mono">
-            {{ row.expiration_date|default:"-" }}
-          </td>
-          <td class="py-1.5 text-right font-mono">
-            {{ row.quantity|default:"-" }}
-          </td>
-          <td class="py-1.5 text-right font-mono">
-            {{ row.entry_price|default:"-" }}
-          </td>
-          <td class="py-1.5 text-right font-mono">
-            {{ row.exit_price|default:"-" }}
-          </td>
-          <td
-            class="py-1.5 text-right font-mono {% if row.pnl|default:0 > 0 %}text-profit{% elif row.pnl|default:0 < 0 %}text-loss{% endif %}"
-          >
+        <tr style="border-bottom:1px solid var(--border)"
+            onmouseover="this.style.background='var(--bg-elevated)'" onmouseout="this.style.background=''">
+          <td class="px-3 py-2" style="color:var(--text-secondary)">{{ row.trade_date|default:"-" }}</td>
+          <td class="px-3 py-2 mono" style="color:var(--text-primary)">{{ row.symbol|default:"SPX" }}</td>
+          <td class="px-3 py-2 text-right" style="color:var(--text-secondary)">{{ row.option_type|default:"-" }}</td>
+          <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.strike_price|default:"-" }}</td>
+          <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.expiration_date|default:"-" }}</td>
+          <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.quantity|default:"-" }}</td>
+          <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.entry_price|default:"-" }}</td>
+          <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.exit_price|default:"-" }}</td>
+          <td class="px-3 py-2 text-right mono font-semibold"
+            style="color:{% if row.pnl|default:0 > 0 %}var(--profit){% elif row.pnl|default:0 < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
             {% if row.pnl %}${{ row.pnl|floatformat:2 }}{% else %}-{% endif %}
           </td>
-          <td class="py-1.5 text-right">{{ row.status|default:"-" }}</td>
+          <td class="px-3 py-2 text-right" style="color:var(--text-secondary)">{{ row.status|default:"-" }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
 </div>
 {% endblock %}

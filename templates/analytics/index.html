@@ -1,106 +1,117 @@
 {% extends "base.html" %}
 {% load journal_extras %}
-{% block title %}
-Analytics{% endblock %} {% block page_title %}Analytics{% endblock %} {% block content %}
-<div class="space-y-6">
-  <!-- Period filter -->
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="space-y-5 animate-in">
+
+  <!-- Period filter tabs -->
   <div class="flex gap-2">
     {% for kv in periods %}
-    <a
-      href="?days={{ kv.1 }}"
-      class="px-3 py-1.5 text-xs rounded-lg border transition-colors {% if request.GET.days == kv.1 or not request.GET.days and kv.0 == '30d' %}border-accent text-accent bg-accent/10{% else %}border-white/10 text-slate-400 hover:bg-white/5{% endif %}"
-    >
+    <a href="?days={{ kv.1 }}"
+       class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+       style="{% if request.GET.days == kv.1 or not request.GET.days and kv.0 == '30d' %}border-color:var(--accent);color:var(--accent);background:var(--accent-glow);{% else %}border-color:var(--border);color:var(--text-secondary);{% endif %}"
+       {% if not request.GET.days or not request.GET.days == kv.1 %}
+       onmouseover="this.style.background='rgba(255,255,255,0.04)';this.style.color='var(--text-primary)'"
+       onmouseout="this.style.background='';this.style.color='var(--text-secondary)'"
+       {% endif %}>
       {{ kv.0 }}
     </a>
     {% endfor %}
   </div>
 
   <!-- Row 1: Win Rate by Tag + P&L by Day of Week -->
-  <div class="grid grid-cols-2 gap-6">
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-sm font-semibold text-slate-200 mb-4">
-        Win Rate by Strategy Tag
-      </h3>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="tag" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Win Rate by Strategy Tag</h3>
+      </div>
       <canvas id="winRateByTag" height="200"></canvas>
     </div>
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-sm font-semibold text-slate-200 mb-4">
-        P&L by Day of Week
-      </h3>
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="bar-chart-2" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">P&amp;L by Day of Week</h3>
+      </div>
       <canvas id="pnlByWeekday" height="200"></canvas>
     </div>
   </div>
 
   <!-- Row 2: Psych + Delta -->
-  <div class="grid grid-cols-2 gap-6">
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-sm font-semibold text-slate-200 mb-4">
-        Psychological State vs Outcome
-      </h3>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="brain" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Psychological State vs Outcome</h3>
+      </div>
       <canvas id="psychVsOutcome" height="200"></canvas>
     </div>
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-sm font-semibold text-slate-200 mb-4">
-        Delta at Entry vs P&L
-      </h3>
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="scatter-chart" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Delta at Entry vs P&amp;L</h3>
+      </div>
       <canvas id="deltaVsPnl" height="200"></canvas>
     </div>
   </div>
 
   <!-- Row 3: Drawdown + Setup Quality -->
-  <div class="grid grid-cols-2 gap-6">
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-sm font-semibold text-slate-200 mb-4">
-        Cumulative P&L & Drawdown
-      </h3>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="trending-down" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Cumulative P&amp;L &amp; Drawdown</h3>
+      </div>
       <canvas id="drawdown" height="200"></canvas>
     </div>
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-sm font-semibold text-slate-200 mb-4">
-        Setup Quality vs Outcome
-      </h3>
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="star" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Setup Quality vs Outcome</h3>
+      </div>
       <canvas id="setupQuality" height="200"></canvas>
     </div>
   </div>
 
   <!-- Row 4: Trade Duration + Monthly Table -->
-  <div class="grid grid-cols-2 gap-6">
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-sm font-semibold text-slate-200 mb-4">
-        Trade Duration vs P&L
-      </h3>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="clock" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Trade Duration vs P&amp;L</h3>
+      </div>
       <canvas id="durationVsPnl" height="200"></canvas>
     </div>
-    <div
-      class="bg-[#161b27] rounded-xl border border-white/5 p-5 overflow-auto"
-    >
-      <h3 class="text-sm font-semibold text-slate-200 mb-4">
-        Monthly Performance
-      </h3>
+    <div class="card p-5 overflow-auto">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="table" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Monthly Performance</h3>
+      </div>
       <table class="w-full text-xs" id="monthly-table">
         <thead>
-          <tr
-            class="border-b border-white/5 text-slate-500 uppercase tracking-wider"
-          >
-            <th class="py-2 text-left">Month</th>
-            <th class="py-2 text-right">Trades</th>
-            <th class="py-2 text-right">Win %</th>
-            <th class="py-2 text-right">P&L</th>
-            <th class="py-2 text-right">Avg R:R</th>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th class="py-2 text-left font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Month</th>
+            <th class="py-2 text-right font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Trades</th>
+            <th class="py-2 text-right font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Win %</th>
+            <th class="py-2 text-right font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">P&amp;L</th>
+            <th class="py-2 text-right font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Avg R:R</th>
           </tr>
         </thead>
-        <tbody id="monthly-table-body" class="divide-y divide-white/3">
+        <tbody id="monthly-table-body">
           <tr>
-            <td colspan="5" class="py-6 text-center text-slate-600">
-              Loading…
-            </td>
+            <td colspan="5" class="py-6 text-center" style="color:var(--text-muted);">Loading…</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
+
 </div>
-{% endblock %} {% block extra_scripts %}
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
   const qs = window.location.search;
   const CHART_DEFAULTS = {
@@ -155,7 +166,7 @@ Analytics{% endblock %} {% block page_title %}Analytics{% endblock %} {% block c
             label: "Avg P&L ($)",
             data: d.avg_pnl,
             backgroundColor: d.avg_pnl.map((v) =>
-              v >= 0 ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.6)",
+              v >= 0 ? "rgba(16,185,129,0.6)" : "rgba(244,63,94,0.6)",
             ),
             borderRadius: 4,
             yAxisID: "y",
@@ -163,7 +174,7 @@ Analytics{% endblock %} {% block page_title %}Analytics{% endblock %} {% block c
           {
             label: "Win Rate (%)",
             data: d.win_rates,
-            backgroundColor: "rgba(234,179,8,0.4)",
+            backgroundColor: "rgba(59,130,246,0.4)",
             borderRadius: 4,
             yAxisID: "y2",
           },
@@ -261,8 +272,8 @@ Analytics{% endblock %} {% block page_title %}Analytics{% endblock %} {% block c
           {
             label: "Equity ($)",
             data: d.equity,
-            borderColor: "#22c55e",
-            backgroundColor: "rgba(34,197,94,0.05)",
+            borderColor: "#10b981",
+            backgroundColor: "rgba(16,185,129,0.05)",
             fill: true,
             tension: 0.3,
             pointRadius: 0,
@@ -270,8 +281,8 @@ Analytics{% endblock %} {% block page_title %}Analytics{% endblock %} {% block c
           {
             label: "Drawdown ($)",
             data: d.drawdown,
-            borderColor: "#ef4444",
-            backgroundColor: "rgba(239,68,68,0.1)",
+            borderColor: "#f43f5e",
+            backgroundColor: "rgba(244,63,94,0.1)",
             fill: true,
             tension: 0.3,
             pointRadius: 0,
@@ -304,7 +315,7 @@ Analytics{% endblock %} {% block page_title %}Analytics{% endblock %} {% block c
             label: "Avg P&L ($)",
             data: d.data.map((x) => x.avg_pnl),
             backgroundColor: d.data.map((x) =>
-              x.avg_pnl >= 0 ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.6)",
+              x.avg_pnl >= 0 ? "rgba(16,185,129,0.6)" : "rgba(244,63,94,0.6)",
             ),
             borderRadius: 4,
           },
@@ -346,20 +357,20 @@ Analytics{% endblock %} {% block page_title %}Analytics{% endblock %} {% block c
     const tbody = document.getElementById("monthly-table-body");
     if (!d.table.length) {
       tbody.innerHTML =
-        '<tr><td colspan="5" class="py-6 text-center text-slate-600">No data</td></tr>';
+        '<tr><td colspan="5" class="py-6 text-center" style="color:var(--text-muted)">No data</td></tr>';
       return;
     }
     tbody.innerHTML = d.table
       .map(
         (r) => `
-    <tr>
-      <td class="py-2 text-slate-300">${r.month}</td>
-      <td class="py-2 text-right text-slate-400">${r.trades}</td>
-      <td class="py-2 text-right text-slate-400">${r.win_rate}%</td>
-      <td class="py-2 text-right font-semibold ${r.total_pnl >= 0 ? "text-green-400" : "text-red-400"}">
+    <tr style="border-bottom:1px solid var(--border);">
+      <td class="py-2 mono" style="color:var(--text-primary)">${r.month}</td>
+      <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.trades}</td>
+      <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.win_rate}%</td>
+      <td class="py-2 text-right mono font-semibold" style="color:${r.total_pnl >= 0 ? 'var(--profit)' : 'var(--loss)'}">
         ${r.total_pnl >= 0 ? "+" : ""}$${r.total_pnl.toFixed(2)}
       </td>
-      <td class="py-2 text-right text-slate-400">${r.avg_rr !== null ? r.avg_rr : "—"}</td>
+      <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.avg_rr !== null ? r.avg_rr : "—"}</td>
     </tr>
   `,
       )

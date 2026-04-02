@@ -1,54 +1,41 @@
 {% extends "base.html" %}
-{% block title %}
-IBKR Settings{% endblock %} {% block page_title %}IBKR Connection Settings{% endblock %} {% block content %}
-<div class="max-w-sm bg-[#161b27] rounded-xl border border-white/5 p-6">
+{% block title %}IBKR Settings{% endblock %}
+{% block page_title %}IBKR Connection Settings{% endblock %}
+{% block content %}
+
+<div class="max-w-sm card p-6 animate-in">
   <form method="POST" class="space-y-4">
     {% csrf_token %}
     <div>
-      <label class="block text-xs font-medium text-slate-400 mb-1">Host</label>
-      <input
-        type="text"
-        name="host"
-        value="{{ host }}"
-        class="w-full px-3 py-1.5 text-sm rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none font-mono"
-      />
+      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">Host</label>
+      <input type="text" name="host" value="{{ host }}"
+        class="w-full px-3 py-1.5 text-sm rounded-lg mono focus:outline-none"
+        style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
     </div>
     <div>
-      <label class="block text-xs font-medium text-slate-400 mb-1">Port</label>
-      <input
-        type="number"
-        name="port"
-        value="{{ port }}"
-        class="w-full px-3 py-1.5 text-sm rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none font-mono"
-      />
-      <p class="mt-0.5 text-xs text-slate-600">
-        7497 = TWS paper, 7496 = TWS live, 4002 = Gateway paper
-      </p>
+      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">Port</label>
+      <input type="number" name="port" value="{{ port }}"
+        class="w-full px-3 py-1.5 text-sm rounded-lg mono focus:outline-none"
+        style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
+      <p class="mt-0.5 text-xs" style="color:var(--text-muted)">7497 = TWS paper, 7496 = TWS live, 4002 = Gateway paper</p>
     </div>
     <div>
-      <label class="block text-xs font-medium text-slate-400 mb-1"
-        >Client ID</label
-      >
-      <input
-        type="number"
-        name="client_id"
-        value="{{ client_id }}"
-        class="w-full px-3 py-1.5 text-sm rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none font-mono"
-      />
+      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">Client ID</label>
+      <input type="number" name="client_id" value="{{ client_id }}"
+        class="w-full px-3 py-1.5 text-sm rounded-lg mono focus:outline-none"
+        style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
     </div>
     <div class="flex gap-3 pt-2">
-      <a
-        href="{% url 'ibkr_status_page' %}"
-        class="px-4 py-2 text-sm border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
-        >Cancel</a
-      >
-      <button
-        type="submit"
-        class="px-4 py-2 text-sm bg-accent hover:bg-blue-600 text-white rounded-lg"
-      >
-        Save
-      </button>
+      <a href="{% url 'ibkr_status_page' %}"
+        class="px-4 py-2 text-sm rounded-lg transition-colors"
+        style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+        onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Cancel</a>
+      <button type="submit"
+        class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+        style="background:var(--accent);color:#fff"
+        onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Save</button>
     </div>
   </form>
 </div>
+
 {% endblock %}

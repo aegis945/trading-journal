@@ -1,100 +1,84 @@
 {% extends "base.html" %}
 {% load journal_extras %}
-{% block title %}
-Performance
-Review{% endblock %} {% block page_title %}Performance Review{% endblock %} {% block header_actions %}
+{% block title %}Performance Review{% endblock %}
+{% block page_title %}Performance Review{% endblock %}
+{% block header_actions %}
 <form method="GET" class="flex gap-2">
-  <select
-    name="period"
-    class="px-3 py-1.5 text-xs rounded-lg bg-[#161b27] border border-white/10 text-slate-300 focus:border-accent focus:outline-none"
-  >
-    <option value="weekly" {% if period == "weekly" %}selected{% endif %}>
-      Weekly
-    </option>
-    <option value="monthly" {% if period == "monthly" %}selected{% endif %}>
-      Monthly
-    </option>
+  <select name="period"
+    class="px-3 py-1.5 text-xs rounded-lg focus:outline-none"
+    style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary)">
+    <option value="weekly" {% if period == "weekly" %}selected{% endif %}>Weekly</option>
+    <option value="monthly" {% if period == "monthly" %}selected{% endif %}>Monthly</option>
   </select>
-  <button
-    type="submit"
-    class="px-3 py-1.5 text-xs bg-accent hover:bg-blue-600 text-white rounded-lg"
-  >
-    Load
-  </button>
+  <button type="submit"
+    class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+    style="background:var(--accent);color:#fff"
+    onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Load</button>
 </form>
-{% endblock %} {% block content %}
+{% endblock %}
+{% block content %}
+
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-  <div class="bg-[#161b27] rounded-xl border border-white/5 p-4">
-    <p class="text-xs text-slate-500">Total P&amp;L</p>
-    <p
-      class="text-xl font-bold mt-1 {% if stats.total_pnl >= 0 %}text-profit{% else %}text-loss{% endif %}"
-    >
+  <div class="card p-4 animate-in">
+    <p class="text-xs mb-1" style="color:var(--text-muted)">Total P&amp;L</p>
+    <p class="mono text-xl font-bold" style="color:{% if stats.total_pnl >= 0 %}var(--profit){% else %}var(--loss){% endif %}">
       {{ stats.total_pnl|pnl_str }}
     </p>
   </div>
-  <div class="bg-[#161b27] rounded-xl border border-white/5 p-4">
-    <p class="text-xs text-slate-500">Win Rate</p>
-    <p class="text-xl font-bold mt-1 text-slate-200">
-      {{ stats.win_rate|floatformat:1 }}%
-    </p>
+  <div class="card p-4 animate-in" style="animation-delay:40ms">
+    <p class="text-xs mb-1" style="color:var(--text-muted)">Win Rate</p>
+    <p class="mono text-xl font-bold" style="color:var(--text-primary)">{{ stats.win_rate|floatformat:1 }}%</p>
   </div>
-  <div class="bg-[#161b27] rounded-xl border border-white/5 p-4">
-    <p class="text-xs text-slate-500">Trades</p>
-    <p class="text-xl font-bold mt-1 text-slate-200">
-      {{ stats.total_trades }}
-    </p>
+  <div class="card p-4 animate-in" style="animation-delay:80ms">
+    <p class="text-xs mb-1" style="color:var(--text-muted)">Trades</p>
+    <p class="mono text-xl font-bold" style="color:var(--text-primary)">{{ stats.total_trades }}</p>
   </div>
-  <div class="bg-[#161b27] rounded-xl border border-white/5 p-4">
-    <p class="text-xs text-slate-500">Avg R:R</p>
-    <p class="text-xl font-bold mt-1 text-slate-200">
-      {{ stats.avg_rr|floatformat:2 }}
-    </p>
+  <div class="card p-4 animate-in" style="animation-delay:120ms">
+    <p class="text-xs mb-1" style="color:var(--text-muted)">Avg R:R</p>
+    <p class="mono text-xl font-bold" style="color:var(--text-primary)">{{ stats.avg_rr|floatformat:2 }}</p>
   </div>
 </div>
 
 {% if periods %}
-<div class="overflow-x-auto">
-  <table class="w-full text-xs text-slate-300">
+<div class="card overflow-x-auto animate-in" style="animation-delay:160ms">
+  <table class="w-full text-xs">
     <thead>
-      <tr class="border-b border-white/5 text-slate-500">
-        <th class="pb-2 text-left">Period</th>
-        <th class="pb-2 text-right">Trades</th>
-        <th class="pb-2 text-right">Wins</th>
-        <th class="pb-2 text-right">Win%</th>
-        <th class="pb-2 text-right">P&amp;L</th>
-        <th class="pb-2 text-right">Avg R:R</th>
-        <th class="pb-2 text-right">Best</th>
-        <th class="pb-2 text-right">Worst</th>
+      <tr style="border-bottom:1px solid var(--border)">
+        <th class="px-3 py-2.5 text-left font-medium uppercase tracking-wider" style="color:var(--text-muted)">Period</th>
+        <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Trades</th>
+        <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Wins</th>
+        <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Win%</th>
+        <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">P&amp;L</th>
+        <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Avg R:R</th>
+        <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Best</th>
+        <th class="px-3 py-2.5 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Worst</th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-white/5">
+    <tbody>
       {% for row in periods %}
-      <tr class="hover:bg-white/3">
-        <td class="py-1.5 font-mono">{{ row.label }}</td>
-        <td class="py-1.5 text-right">{{ row.trades }}</td>
-        <td class="py-1.5 text-right">{{ row.wins }}</td>
-        <td class="py-1.5 text-right">{{ row.win_rate|floatformat:1 }}%</td>
-        <td
-          class="py-1.5 text-right font-mono {% if row.pnl >= 0 %}text-profit{% else %}text-loss{% endif %}"
-        >
+      <tr style="border-bottom:1px solid var(--border)"
+          onmouseover="this.style.background='var(--bg-elevated)'" onmouseout="this.style.background=''">
+        <td class="px-3 py-2 mono" style="color:var(--text-primary)">{{ row.label }}</td>
+        <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.trades }}</td>
+        <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.wins }}</td>
+        <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.win_rate|floatformat:1 }}%</td>
+        <td class="px-3 py-2 text-right mono font-semibold"
+          style="color:{% if row.pnl >= 0 %}var(--profit){% else %}var(--loss){% endif %}">
           {{ row.pnl|pnl_str }}
         </td>
-        <td class="py-1.5 text-right">{{ row.avg_rr|floatformat:2 }}</td>
-        <td class="py-1.5 text-right text-profit font-mono">
-          ${{ row.best|floatformat:2 }}
-        </td>
-        <td class="py-1.5 text-right text-loss font-mono">
-          ${{ row.worst|floatformat:2 }}
-        </td>
+        <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.avg_rr|floatformat:2 }}</td>
+        <td class="px-3 py-2 text-right mono" style="color:var(--profit)">${{ row.best|floatformat:2 }}</td>
+        <td class="px-3 py-2 text-right mono" style="color:var(--loss)">${{ row.worst|floatformat:2 }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
 {% else %}
-<div
-  class="bg-[#161b27] rounded-xl border border-white/5 p-8 text-center text-slate-500"
->
-  No trade data available for this period.
+<div class="card p-8 text-center animate-in">
+  <i data-lucide="bar-chart-2" class="mx-auto mb-3" style="width:28px;height:28px;opacity:0.3"></i>
+  <p class="text-sm" style="color:var(--text-muted)">No trade data available for this period.</p>
 </div>
-{% endif %} {% endblock %}
+{% endif %}
+
+{% endblock %}

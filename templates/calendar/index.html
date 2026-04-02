@@ -1,84 +1,90 @@
 {% extends "base.html" %}
 {% load journal_extras %}
-{% block title %}
-Calendar{% endblock %} {% block page_title %}Calendar{% endblock %} {% block content %}
-<div class="space-y-4">
+{% block title %}Calendar{% endblock %}
+{% block page_title %}Calendar{% endblock %}
+
+{% block content %}
+<div class="space-y-4 animate-in">
+
   <!-- Month navigation -->
   <div class="flex items-center justify-between">
-    <a
-      href="?year={{ prev_year }}&month={{ prev_month }}"
-      class="px-3 py-1.5 text-sm border border-white/10 rounded-lg text-slate-400 hover:bg-white/5 transition-colors"
-    >
-      ← Prev
+    <a href="?year={{ prev_year }}&month={{ prev_month }}"
+       class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors"
+       style="border-color:var(--border);color:var(--text-secondary);"
+       onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text-primary)'"
+       onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">
+      <i data-lucide="chevron-left" style="width:14px;height:14px;"></i> Prev
     </a>
-    <h2 class="text-base font-semibold text-slate-200">
-      {{ month_name }} {{ year }}
-    </h2>
-    <a
-      href="?year={{ next_year }}&month={{ next_month }}"
-      class="px-3 py-1.5 text-sm border border-white/10 rounded-lg text-slate-400 hover:bg-white/5 transition-colors"
-    >
-      Next →
+    <h2 class="text-base font-semibold" style="color:var(--text-primary);">{{ month_name }} {{ year }}</h2>
+    <a href="?year={{ next_year }}&month={{ next_month }}"
+       class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors"
+       style="border-color:var(--border);color:var(--text-secondary);"
+       onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text-primary)'"
+       onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">
+      Next <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
     </a>
   </div>
 
   <!-- Calendar grid -->
-  <div class="bg-[#161b27] rounded-xl border border-white/5 overflow-hidden">
-    <!-- Day headers -->
-    <div class="grid grid-cols-7 border-b border-white/5">
+  <div class="card overflow-hidden">
+    <!-- Day-name header -->
+    <div class="grid grid-cols-7" style="border-bottom:1px solid var(--border);">
       {% for day_name in "Mon,Tue,Wed,Thu,Fri,Sat,Sun"|split:"," %}
-      <div class="px-2 py-2 text-xs text-slate-500 text-center">
-        {{ day_name }}
-      </div>
+      <div class="py-2 text-xs text-center font-semibold uppercase tracking-widest"
+           style="color:var(--text-secondary);">{{ day_name }}</div>
       {% endfor %}
     </div>
 
     <!-- Weeks -->
     {% for week in weeks %}
-    <div class="grid grid-cols-7 border-b border-white/5 last:border-b-0">
-      {% for cell in week %} {% if cell %}
-      <a
-        href="{% url 'session_detail' cell.date|date:'Y-m-d' %}"
-        class="min-h-[90px] p-2 border-r border-white/3 last:border-r-0 transition-colors relative {% if cell.pnl is not None %}{% if cell.pnl > 0 %}bg-profit/10 hover:bg-profit/15 {% elif cell.pnl < 0 %}bg-loss/10 hover:bg-loss/15 {% else %}bg-neutral/10 hover:bg-neutral/15{% endif %}{% else %}hover:bg-white/3{% endif %} {% if cell.is_today %}ring-1 ring-accent ring-inset{% endif %}"
-      >
+    <div class="grid grid-cols-7" style="border-bottom:1px solid var(--border);">
+      {% for cell in week %}
+      {% if cell %}
+      <a href="{% url 'session_detail' cell.date|date:'Y-m-d' %}"
+         class="min-h-[88px] p-2.5 relative transition-all duration-150 group"
+         style="border-right:1px solid var(--border);
+           {% if cell.pnl is not None %}
+             {% if cell.pnl > 0 %}background:var(--profit-glow);{% elif cell.pnl < 0 %}background:var(--loss-glow);{% else %}background:rgba(148,163,184,0.05);{% endif %}
+           {% endif %}
+           {% if cell.is_today %}outline:1px solid var(--accent);outline-offset:-1px;{% endif %}
+           "
+         onmouseover="this.style.filter='brightness(1.35)'"
+         onmouseout="this.style.filter=''">
         <!-- Day number -->
-        <span
-          class="text-xs font-medium {% if cell.is_today %}text-accent {% elif cell.date.weekday >= 5 %}text-slate-600 {% else %}text-slate-400{% endif %}"
-        >
+        <span class="text-xs font-semibold
+          {% if cell.is_today %}text-accent{% elif cell.date.weekday >= 5 %}{% else %}{% endif %}"
+          style="{% if not cell.is_today %}color:{% if cell.date.weekday >= 5 %}var(--text-muted){% else %}var(--text-secondary){% endif %};{% endif %}">
           {{ cell.date.day }}
         </span>
-
         <!-- P&L -->
         {% if cell.pnl is not None %}
-        <p class="mt-1 text-xs font-semibold truncate {{ cell.pnl|pnl_color }}">
+        <p class="mono mt-1 text-xs font-semibold truncate {{ cell.pnl|pnl_color }}">
           {{ cell.pnl|pnl_str:0 }}
         </p>
         {% endif %}
-
         <!-- Trade count -->
         {% if cell.trade_count %}
-        <p class="text-xs text-slate-600">
-          {{ cell.trade_count }} trade{{ cell.trade_count|pluralize }}
+        <p class="text-xs mt-0.5" style="color:var(--text-muted);">
+          {{ cell.trade_count }}t
         </p>
         {% endif %}
       </a>
       {% else %}
-      <div
-        class="min-h-[90px] p-2 border-r border-white/3 last:border-r-0 bg-black/5"
-      ></div>
-      {% endif %} {% endfor %}
+      <div class="min-h-[88px]" style="border-right:1px solid var(--border);background:rgba(0,0,0,0.15);"></div>
+      {% endif %}
+      {% endfor %}
     </div>
     {% endfor %}
   </div>
 
   <!-- Monthly summary -->
-  <div
-    class="flex items-center justify-between px-4 py-3 bg-[#161b27] rounded-xl border border-white/5"
-  >
-    <span class="text-sm text-slate-400">Monthly Total</span>
-    <span class="text-base font-bold {{ month_pnl|pnl_color }}">
-      {{ month_pnl|pnl_str }}
-    </span>
+  <div class="card flex items-center justify-between px-5 py-3.5">
+    <div class="flex items-center gap-2" style="color:var(--text-secondary);">
+      <i data-lucide="sigma" style="width:14px;height:14px;"></i>
+      <span class="text-sm">Monthly Total</span>
+    </div>
+    <span class="mono text-base font-semibold {{ month_pnl|pnl_color }}">{{ month_pnl|pnl_str }}</span>
   </div>
+
 </div>
 {% endblock %}

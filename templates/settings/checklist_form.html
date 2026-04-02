@@ -1,40 +1,38 @@
 {% extends "base.html" %}
-{% block title %}
-{{ title }}{% endblock %} {% block page_title %}{{ title }}{% endblock %} {% block content %}
-<div class="max-w-lg bg-[#161b27] rounded-xl border border-white/5 p-6">
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+
+<div class="max-w-lg card p-6 animate-in">
   <form method="POST" class="space-y-4">
-    {% csrf_token %} {% for field in form %}
+    {% csrf_token %}
+    {% for field in form %}
     <div>
-      <label class="block text-xs font-medium text-slate-400 mb-1"
-        >{{ field.label }}</label
-      >
-      {{ field }} {% if field.help_text %}
-      <p class="mt-0.5 text-xs text-slate-600">{{ field.help_text }}</p>
-      {% endif %} {% if field.errors %}
-      <p class="mt-1 text-xs text-loss">{{ field.errors|join:", " }}</p>
+      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}
+      <p class="mt-0.5 text-xs" style="color:var(--text-muted)">{{ field.help_text }}</p>
+      {% endif %}
+      {% if field.errors %}
+      <p class="mt-1 text-xs" style="color:var(--loss)">{{ field.errors|join:", " }}</p>
       {% endif %}
     </div>
     {% endfor %}
-    <p class="text-xs text-slate-500">
+    <p class="text-xs" style="color:var(--text-muted)">
       Items JSON format:
-      <code class="text-slate-400"
-        >[{"category":"Risk Check","text":"Max 1 contract","required":true},
-        ...]</code
-      >
+      <code class="mono" style="color:var(--text-secondary)">[{"category":"Risk Check","text":"Max 1 contract","required":true}, ...]</code>
     </p>
     <div class="flex gap-3 pt-2">
-      <a
-        href="{% url 'settings_checklist' %}"
-        class="px-4 py-2 text-sm border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
-        >Cancel</a
-      >
-      <button
-        type="submit"
-        class="px-4 py-2 text-sm bg-accent hover:bg-blue-600 text-white rounded-lg"
-      >
-        Save Template
-      </button>
+      <a href="{% url 'settings_checklist' %}"
+        class="px-4 py-2 text-sm rounded-lg transition-colors"
+        style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+        onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Cancel</a>
+      <button type="submit"
+        class="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+        style="background:var(--accent);color:#fff"
+        onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Save Template</button>
     </div>
   </form>
 </div>
+
 {% endblock %}

@@ -1,77 +1,73 @@
 {% extends "base.html" %}
-{% block title %}
-IBKR TWS{% endblock %} {% block page_title %}IBKR TWS Connection{% endblock %} {% block header_actions %}
-<a
-  href="{% url 'ibkr_chain' %}"
-  class="px-3 py-1.5 text-xs border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
-  >Option Chain</a
->
-<a
-  href="{% url 'ibkr_settings' %}"
-  class="px-3 py-1.5 text-xs border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
-  >Settings</a
->
-{% endblock %} {% block content %}
-<div class="space-y-4 max-w-lg">
-  <!-- live status badge, HTMX refreshed -->
-  <div
-    id="ibkr-status-badge"
+{% block title %}IBKR TWS{% endblock %}
+{% block page_title %}IBKR TWS Connection{% endblock %}
+{% block header_actions %}
+<a href="{% url 'ibkr_chain' %}"
+  class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+  style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+  onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Option Chain</a>
+<a href="{% url 'ibkr_settings' %}"
+  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+  style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+  onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'"><i data-lucide="settings" style="width:12px;height:12px"></i> Settings</a>
+{% endblock %}
+{% block content %}
+
+<div class="space-y-5 max-w-lg">
+
+  <div id="ibkr-status-badge"
     hx-get="{% url 'ibkr_status' %}"
     hx-trigger="load, every 10s"
-    hx-swap="innerHTML"
-  >
-    <div class="animate-pulse h-5 w-24 bg-white/5 rounded"></div>
+    hx-swap="innerHTML">
+    <div class="animate-pulse rounded" style="height:20px;width:96px;background:var(--bg-elevated)"></div>
   </div>
 
-  <div class="bg-[#161b27] rounded-xl border border-white/5 p-5 space-y-2">
-    <p class="text-xs text-slate-500">
-      Host: <span class="text-slate-300 font-mono">{{ host }}</span>
-    </p>
-    <p class="text-xs text-slate-500">
-      Port: <span class="text-slate-300 font-mono">{{ port }}</span>
-    </p>
-    <p class="text-xs text-slate-500">
-      Client ID: <span class="text-slate-300 font-mono">{{ client_id }}</span>
-    </p>
+  <div class="card p-5 space-y-2.5 animate-in">
+    <div class="flex items-center justify-between">
+      <span class="text-xs" style="color:var(--text-muted)">Host</span>
+      <span class="mono text-xs" style="color:var(--text-primary)">{{ host }}</span>
+    </div>
+    <div class="flex items-center justify-between" style="border-top:1px solid var(--border);padding-top:8px">
+      <span class="text-xs" style="color:var(--text-muted)">Port</span>
+      <span class="mono text-xs" style="color:var(--text-primary)">{{ port }}</span>
+    </div>
+    <div class="flex items-center justify-between" style="border-top:1px solid var(--border);padding-top:8px">
+      <span class="text-xs" style="color:var(--text-muted)">Client ID</span>
+      <span class="mono text-xs" style="color:var(--text-primary)">{{ client_id }}</span>
+    </div>
   </div>
 
   {% if connected %}
-  <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-    <p class="text-xs font-medium text-slate-300 mb-3">Fetch SPX Greeks</p>
+  <div class="card p-5 animate-in" style="animation-delay:60ms">
+    <p class="text-xs font-medium mb-4" style="color:var(--text-primary)">Fetch SPX Greeks</p>
     <div x-data="{expiry:'',strike:'',right:'C'}" class="space-y-3">
       <div class="grid grid-cols-3 gap-2">
-        <input
-          x-model="expiry"
-          type="text"
-          placeholder="YYYYMMDD"
-          class="col-span-1 px-3 py-1.5 text-xs rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none"
-        />
-        <input
-          x-model="strike"
-          type="number"
-          placeholder="Strike"
-          class="col-span-1 px-3 py-1.5 text-xs rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none"
-        />
-        <select
-          x-model="right"
-          class="col-span-1 px-3 py-1.5 text-xs rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none"
-        >
+        <input x-model="expiry" type="text" placeholder="YYYYMMDD"
+          class="px-3 py-1.5 text-xs rounded-lg mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
+        <input x-model="strike" type="number" placeholder="Strike"
+          class="px-3 py-1.5 text-xs rounded-lg mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
+        <select x-model="right"
+          class="px-3 py-1.5 text-xs rounded-lg focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
           <option value="C">Call</option>
           <option value="P">Put</option>
         </select>
       </div>
       <button
         @click="fetch(`{% url 'ibkr_greeks' %}?expiry=${expiry}&strike=${strike}&right=${right}`).then(r=>r.json()).then(d=>{ document.getElementById('greeks-result').textContent = JSON.stringify(d,null,2); })"
-        class="px-4 py-1.5 text-xs bg-accent hover:bg-blue-600 text-white rounded-lg"
-      >
+        class="px-4 py-1.5 text-xs font-medium rounded-lg transition-colors"
+        style="background:var(--accent);color:#fff"
+        onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
         Fetch Greeks
       </button>
-      <pre
-        id="greeks-result"
-        class="mt-2 p-3 rounded-lg bg-[#0f1117] text-xs text-slate-400 font-mono whitespace-pre-wrap"
-      ></pre>
+      <pre id="greeks-result" class="mt-2 p-3 rounded-lg text-xs mono whitespace-pre-wrap"
+        style="background:var(--bg-base);color:var(--text-secondary)"></pre>
     </div>
   </div>
   {% endif %}
+
 </div>
+
 {% endblock %}

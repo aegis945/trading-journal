@@ -1,107 +1,91 @@
 {% extends "base.html" %}
 {% load journal_extras %}
-{% block title %}
-Journal{% endblock %} {% block page_title %}Journal{% endblock %} {% block header_actions %}
-<a
-  href="{% url 'journal_new' %}"
-  class="px-3 py-1.5 text-xs font-medium border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg transition-colors"
->
-  + New Entry
+{% block title %}Journal{% endblock %}
+{% block page_title %}Journal{% endblock %}
+{% block header_actions %}
+<a href="{% url 'journal_new' %}"
+  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+  style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+  onmouseover="this.style.background='var(--bg-surface)';this.style.color='var(--text-primary)'" onmouseout="this.style.background='var(--bg-elevated)';this.style.color='var(--text-secondary)'">
+  <i data-lucide="plus" style="width:12px;height:12px"></i> New Entry
 </a>
-{% endblock %} {% block content %}
-<div class="space-y-4">
+{% endblock %}
+{% block content %}
+
+<div class="space-y-5">
+
   <!-- Filters -->
-  <form method="get" class="flex flex-wrap gap-3 items-end">
+  <form method="get" class="card p-4 flex flex-wrap gap-3 items-end animate-in">
     <div>
-      <label class="block text-xs text-slate-500 mb-1">Type</label>
-      <select
-        name="entry_type"
-        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-accent"
-      >
+      <label class="block text-xs mb-1" style="color:var(--text-secondary)">Type</label>
+      <select name="entry_type"
+        class="rounded-lg px-3 py-1.5 text-sm focus:outline-none"
+        style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
         <option value="">All Types</option>
         {% for val, label in entry_type_choices %}
-        <option
-          value="{{ val }}"
-          {% if filters.entry_type == val %}selected{% endif %}
-        >
-          {{ label }}
-        </option>
+        <option value="{{ val }}" {% if filters.entry_type == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </div>
     <div>
-      <label class="block text-xs text-slate-500 mb-1">Tag</label>
-      <input
-        type="text"
-        name="tag"
-        value="{{ filters.tag }}"
-        placeholder="discipline…"
-        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-accent"
-      />
+      <label class="block text-xs mb-1" style="color:var(--text-secondary)">Tag</label>
+      <input type="text" name="tag" value="{{ filters.tag }}" placeholder="discipline…"
+        class="rounded-lg px-3 py-1.5 text-sm focus:outline-none"
+        style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
     </div>
     <div>
-      <label class="block text-xs text-slate-500 mb-1">Search</label>
-      <input
-        type="text"
-        name="q"
-        value="{{ filters.q }}"
-        placeholder="Search entries…"
-        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-accent"
-      />
+      <label class="block text-xs mb-1" style="color:var(--text-secondary)">Search</label>
+      <input type="text" name="q" value="{{ filters.q }}" placeholder="Search entries…"
+        class="rounded-lg px-3 py-1.5 text-sm focus:outline-none"
+        style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
     </div>
-    <button
-      type="submit"
-      class="px-4 py-1.5 text-sm bg-accent hover:bg-blue-500 text-white rounded-lg transition-colors"
-    >
-      Search
+    <button type="submit"
+      class="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg transition-colors"
+      style="background:var(--accent);color:#fff"
+      onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+      <i data-lucide="search" style="width:13px;height:13px"></i> Search
     </button>
-    <a
-      href="{% url 'journal_list' %}"
-      class="px-4 py-1.5 text-sm text-slate-400 hover:text-slate-200"
-      >Clear</a
-    >
+    <a href="{% url 'journal_list' %}" class="px-4 py-1.5 text-sm transition-colors"
+      style="color:var(--text-secondary)"
+      onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
+      Clear
+    </a>
   </form>
 
   <!-- Entry list -->
   <div class="space-y-2">
     {% for entry in entries %}
-    <a
-      href="{% url 'journal_detail' entry.pk %}"
-      class="flex items-start gap-4 px-4 py-3 bg-[#161b27] rounded-xl border border-white/5 hover:border-accent/20 transition-colors group"
-    >
-      <span
-        class="flex-shrink-0 text-xs px-2 py-1 rounded bg-accent/10 text-accent mt-0.5 min-w-[80px] text-center"
-      >
+    <a href="{% url 'journal_detail' entry.pk %}"
+      class="flex items-start gap-4 px-4 py-3 rounded-xl transition-colors animate-in"
+      style="background:var(--bg-surface);border:1px solid var(--border);animation-delay:{{ forloop.counter0 }}0ms"
+      onmouseover="this.style.borderColor='rgba(59,130,246,0.25)'" onmouseout="this.style.borderColor='var(--border)'">
+      <span class="flex-shrink-0 text-xs px-2 py-1 rounded font-medium mt-0.5 min-w-[80px] text-center"
+        style="background:var(--accent-glow);color:var(--accent)">
         {{ entry.entry_type }}
       </span>
       <div class="flex-1 min-w-0">
-        <h3
-          class="text-sm font-medium text-slate-200 group-hover:text-white truncate"
-        >
-          {{ entry.title }}
-        </h3>
+        <h3 class="text-sm font-medium truncate" style="color:var(--text-primary)">{{ entry.title }}</h3>
         {% if entry.tags %}
-        <div class="flex flex-wrap gap-1 mt-1">
+        <div class="flex flex-wrap gap-1 mt-1.5">
           {% for tag in entry.tags %}
-          <span class="text-xs px-1.5 py-0.5 rounded bg-white/5 text-slate-500"
-            >{{ tag }}</span
-          >
+          <span class="text-xs px-1.5 py-0.5 rounded"
+            style="background:var(--bg-elevated);color:var(--text-muted)">{{ tag }}</span>
           {% endfor %}
         </div>
         {% endif %}
       </div>
-      <span class="flex-shrink-0 text-xs text-slate-600"
-        >{{ entry.created_at|date:"M j, Y" }}</span
-      >
+      <span class="flex-shrink-0 mono text-xs" style="color:var(--text-muted)">
+        {{ entry.created_at|date:"M j, Y" }}
+      </span>
     </a>
     {% empty %}
-    <div class="py-12 text-center text-slate-600">
-      No journal entries yet.
-      <a href="{% url 'journal_new' %}" class="text-accent hover:underline ml-1"
-        >Write your first one →</a
-      >
+    <div class="py-16 text-center card">
+      <i data-lucide="book-open" class="mx-auto mb-3" style="width:32px;height:32px;opacity:0.3"></i>
+      <p class="text-sm mb-2" style="color:var(--text-muted)">No journal entries yet.</p>
+      <a href="{% url 'journal_new' %}" class="text-sm" style="color:var(--accent)">Write your first one &rarr;</a>
     </div>
     {% endfor %}
   </div>
+
 </div>
 {% endblock %}

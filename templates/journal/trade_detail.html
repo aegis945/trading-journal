@@ -1,164 +1,171 @@
 {% extends "base.html" %}
 {% load journal_extras %}
-{% block title %}
-{{ trade }}{% endblock %} {% block page_title %}Trade Detail{% endblock %} {% block header_actions %}
-<a
-  href="{% url 'trade_edit' trade.pk %}"
-  class="px-3 py-1.5 text-xs font-medium border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg transition-colors"
->
-  Edit
+{% block title %}{{ trade }}{% endblock %}
+{% block page_title %}Trade Detail{% endblock %}
+
+{% block header_actions %}
+<a href="{% url 'trade_edit' trade.pk %}"
+   class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+   style="border-color:var(--border);color:var(--text-secondary);"
+   onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text-primary)'"
+   onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">
+  <i data-lucide="pencil" style="width:11px;height:11px;"></i> Edit
 </a>
 <form method="post" action="{% url 'trade_delete' trade.pk %}" onsubmit="return confirm('Delete this trade? This cannot be undone.')">
   {% csrf_token %}
-  <button
-    type="submit"
-    class="px-3 py-1.5 text-xs font-medium border border-loss/30 text-loss hover:bg-loss/10 rounded-lg transition-colors"
-  >
-    Delete
+  <button type="submit"
+          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors text-loss"
+          style="border-color:rgba(244,63,94,0.3);"
+          onmouseover="this.style.background='var(--loss-glow)'"
+          onmouseout="this.style.background=''">
+    <i data-lucide="trash-2" style="width:11px;height:11px;"></i> Delete
   </button>
 </form>
-{% endblock %} {% block content %}
-<div class="grid grid-cols-3 gap-6">
-  <!-- Main info -->
-  <div class="col-span-2 space-y-4">
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <div class="flex items-start justify-between mb-4">
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 animate-in">
+
+  <!-- ── Main column ────────────────────────────── -->
+  <div class="lg:col-span-2 space-y-5">
+
+    <!-- Hero card -->
+    <div class="card p-5">
+      <div class="flex items-start justify-between mb-5">
         <div>
-          <h2 class="text-lg font-semibold text-slate-200">
-            {{ trade.symbol }} {{ trade.get_option_type_display }} {{ trade.strike }}
+          <h2 class="text-lg font-semibold mb-1" style="color:var(--text-primary);">
+            {{ trade.symbol }} {{ trade.get_option_type_display }}
+            <span class="mono">{{ trade.strike }}</span>
           </h2>
-          <p class="text-sm text-slate-500">
-            {{ trade.get_trade_type_display }} · Exp {{ trade.expiry }} · {{ trade.quantity }} contract{{ trade.quantity|pluralize }}
+          <p class="text-sm" style="color:var(--text-secondary);">
+            {{ trade.get_trade_type_display }} · Exp
+            <span class="mono">{{ trade.expiry }}</span> ·
+            {{ trade.quantity }} contract{{ trade.quantity|pluralize }}
           </p>
         </div>
-        <span
-          class="text-sm px-3 py-1 rounded-full {% if trade.status == 'OPEN' %}bg-neutral/15 text-neutral {% elif trade.status == 'CLOSED' %}bg-profit/10 text-profit {% else %}bg-slate-700 text-slate-400{% endif %}"
-        >
+        <span class="text-xs px-3 py-1 rounded-full font-medium
+          {% if trade.status == 'OPEN' %}text-neutral{% elif trade.status == 'CLOSED' %}text-profit{% else %}text-slate-400{% endif %}"
+          style="background:{% if trade.status == 'OPEN' %}rgba(148,163,184,0.1){% elif trade.status == 'CLOSED' %}var(--profit-glow){% else %}rgba(100,116,139,0.1){% endif %};">
           {{ trade.status }}
         </span>
       </div>
 
-      <div class="grid grid-cols-3 gap-4">
-        <div class="bg-white/3 rounded-lg p-3">
-          <p class="text-xs text-slate-500 mb-1">P&L</p>
+      <!-- P&L / Entry / Exit mini-cards -->
+      <div class="grid grid-cols-3 gap-3 mb-5">
+        <div class="rounded-lg p-3 border" style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+          <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">P&amp;L</p>
           {% if trade.pnl is not None %}
-          <p class="text-xl font-bold {{ trade.pnl|pnl_color }}">
-            {{ trade.pnl|pnl_str }}
-          </p>
-          <p class="text-xs text-slate-500">{{ trade.pnl_percent }}%</p>
+          <p class="mono text-xl font-semibold {{ trade.pnl|pnl_color }}">{{ trade.pnl|pnl_str }}</p>
+          <p class="mono text-xs mt-0.5" style="color:var(--text-secondary);">{{ trade.pnl_percent }}%</p>
           {% else %}
-          <p class="text-xl font-bold text-slate-600">—</p>
+          <p class="mono text-xl font-semibold" style="color:var(--text-muted);">—</p>
           {% endif %}
         </div>
-        <div class="bg-white/3 rounded-lg p-3">
-          <p class="text-xs text-slate-500 mb-1">Entry</p>
-          <p class="text-lg font-semibold text-slate-200">
-            ${{ trade.entry_price|floatformat:2 }}
-          </p>
-          <p class="text-xs text-slate-500">{{ trade.entry_time }}</p>
+        <div class="rounded-lg p-3 border" style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+          <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">Entry</p>
+          <p class="mono text-lg font-semibold" style="color:var(--text-primary);">${{ trade.entry_price|floatformat:2 }}</p>
+          <p class="mono text-xs mt-0.5" style="color:var(--text-secondary);">{{ trade.entry_time }}</p>
         </div>
-        <div class="bg-white/3 rounded-lg p-3">
-          <p class="text-xs text-slate-500 mb-1">Exit</p>
+        <div class="rounded-lg p-3 border" style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+          <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">Exit</p>
           {% if trade.exit_price %}
-          <p class="text-lg font-semibold text-slate-200">
-            ${{ trade.exit_price|floatformat:2 }}
-          </p>
-          <p class="text-xs text-slate-500">
-            {{ trade.exit_time|default:"—" }}
-          </p>
+          <p class="mono text-lg font-semibold" style="color:var(--text-primary);">${{ trade.exit_price|floatformat:2 }}</p>
+          <p class="mono text-xs mt-0.5" style="color:var(--text-secondary);">{{ trade.exit_time|default:"—" }}</p>
           {% else %}
-          <p class="text-lg font-semibold text-slate-600">—</p>
+          <p class="mono text-lg font-semibold" style="color:var(--text-muted);">—</p>
           {% endif %}
         </div>
       </div>
 
-      <!-- TP/SL levels -->
-      <div class="mt-4">
-        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-2">
-          Risk Levels
-        </h3>
+      <!-- Risk levels -->
+      <div class="mb-5">
+        <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">Risk Levels</p>
         <div class="flex flex-wrap gap-2">
           {% if trade.planned_stop_loss %}
-          <span class="text-xs px-2 py-1 rounded bg-loss/10 text-loss"
-            >SL: ${{ trade.planned_stop_loss|floatformat:2 }}</span
-          >
-          {% endif %} {% if trade.planned_take_profit_1 %}
-          <span class="text-xs px-2 py-1 rounded bg-profit/10 text-profit"
-            >TP1: ${{ trade.planned_take_profit_1|floatformat:2 }}</span
-          >
-          {% endif %} {% if trade.planned_take_profit_2 %}
-          <span class="text-xs px-2 py-1 rounded bg-profit/10 text-profit"
-            >TP2: ${{ trade.planned_take_profit_2 }}</span
-          >
-          {% endif %} {% if trade.planned_take_profit_3 %}
-          <span class="text-xs px-2 py-1 rounded bg-profit/10 text-profit"
-            >TP3: ${{ trade.planned_take_profit_3 }}</span
-          >
-          {% endif %} {% if trade.risk_reward_ratio %}
-          <span class="text-xs px-2 py-1 rounded bg-accent/10 text-accent"
-            >R:R {{ trade.risk_reward_ratio|rr_str }}:1</span
-          >
+          <span class="mono text-xs px-2.5 py-1 rounded font-medium text-loss" style="background:var(--loss-glow);">
+            SL ${{ trade.planned_stop_loss|floatformat:2 }}
+          </span>
+          {% endif %}
+          {% if trade.planned_take_profit_1 %}
+          <span class="mono text-xs px-2.5 py-1 rounded font-medium text-profit" style="background:var(--profit-glow);">
+            TP1 ${{ trade.planned_take_profit_1|floatformat:2 }}
+          </span>
+          {% endif %}
+          {% if trade.planned_take_profit_2 %}
+          <span class="mono text-xs px-2.5 py-1 rounded font-medium text-profit" style="background:var(--profit-glow);">
+            TP2 ${{ trade.planned_take_profit_2 }}
+          </span>
+          {% endif %}
+          {% if trade.planned_take_profit_3 %}
+          <span class="mono text-xs px-2.5 py-1 rounded font-medium text-profit" style="background:var(--profit-glow);">
+            TP3 ${{ trade.planned_take_profit_3 }}
+          </span>
+          {% endif %}
+          {% if trade.risk_reward_ratio %}
+          <span class="mono text-xs px-2.5 py-1 rounded font-medium text-accent" style="background:var(--accent-glow);">
+            R:R {{ trade.risk_reward_ratio|rr_str }}:1
+          </span>
+          {% endif %}
+          {% if not trade.planned_stop_loss and not trade.planned_take_profit_1 and not trade.risk_reward_ratio %}
+          <span class="text-xs italic" style="color:var(--text-muted);">No risk levels recorded</span>
           {% endif %}
         </div>
       </div>
 
+      <!-- Notes -->
       {% if trade.trade_notes %}
-      <div class="mt-4">
-        <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">
-          Rationale
-        </p>
-        <p class="text-sm text-slate-300 bg-white/3 rounded-lg px-3 py-2">
+      <div class="mb-4">
+        <p class="text-xs uppercase tracking-widest mb-1.5" style="color:var(--text-secondary);">Rationale</p>
+        <p class="text-sm rounded-lg px-3 py-2.5 border" style="color:var(--text-primary);background:rgba(255,255,255,0.02);border-color:var(--border);">
           {{ trade.trade_notes }}
         </p>
       </div>
-      {% endif %} {% if trade.exit_notes %}
-      <div class="mt-3">
-        <p class="text-xs text-slate-500 uppercase tracking-wider mb-1">
-          Exit Notes
-        </p>
-        <p class="text-sm text-slate-300 bg-white/3 rounded-lg px-3 py-2">
+      {% endif %}
+      {% if trade.exit_notes %}
+      <div class="mb-4">
+        <p class="text-xs uppercase tracking-widest mb-1.5" style="color:var(--text-secondary);">Exit Notes</p>
+        <p class="text-sm rounded-lg px-3 py-2.5 border" style="color:var(--text-primary);background:rgba(255,255,255,0.02);border-color:var(--border);">
           {{ trade.exit_notes }}
         </p>
       </div>
-      {% endif %} {% if trade.strategy_tags %}
-      <div class="mt-3 flex flex-wrap gap-1.5">
+      {% endif %}
+
+      <!-- Tags -->
+      {% if trade.strategy_tags %}
+      <div class="flex flex-wrap gap-1.5">
         {% for tag in trade.strategy_tags %}
-        <span class="text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent"
-          >{{ tag }}</span
-        >
+        <span class="text-xs px-2.5 py-1 rounded-full font-medium text-accent" style="background:var(--accent-glow);">
+          {{ tag }}
+        </span>
         {% endfor %}
       </div>
       {% endif %}
     </div>
 
-    <!-- Greeks -->
+    <!-- Greeks card -->
     {% if trade.delta_entry or trade.theta_entry or trade.vega_entry or trade.iv_entry %}
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
-        Greeks at Entry
-      </h3>
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="activity" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Greeks at Entry</h3>
+      </div>
       <div class="grid grid-cols-4 gap-4">
-        <div>
-          <p class="text-xs text-slate-500 mb-1">Delta</p>
-          <p class="text-base font-semibold text-slate-200">
-            {{ trade.delta_entry|default:"—" }}
-          </p>
+        {% for gname, gval in "Delta,delta_entry|Theta,theta_entry|Vega,vega_entry"|split:"|" %}{% endfor %}
+        <div class="text-center p-3 rounded-lg border" style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+          <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">Delta</p>
+          <p class="mono font-semibold" style="color:var(--text-primary);">{{ trade.delta_entry|default:"—" }}</p>
         </div>
-        <div>
-          <p class="text-xs text-slate-500 mb-1">Theta</p>
-          <p class="text-base font-semibold text-slate-200">
-            {{ trade.theta_entry|default:"—" }}
-          </p>
+        <div class="text-center p-3 rounded-lg border" style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+          <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">Theta</p>
+          <p class="mono font-semibold" style="color:var(--text-primary);">{{ trade.theta_entry|default:"—" }}</p>
         </div>
-        <div>
-          <p class="text-xs text-slate-500 mb-1">Vega</p>
-          <p class="text-base font-semibold text-slate-200">
-            {{ trade.vega_entry|default:"—" }}
-          </p>
+        <div class="text-center p-3 rounded-lg border" style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+          <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">Vega</p>
+          <p class="mono font-semibold" style="color:var(--text-primary);">{{ trade.vega_entry|default:"—" }}</p>
         </div>
-        <div>
-          <p class="text-xs text-slate-500 mb-1">IV</p>
-          <p class="text-base font-semibold text-slate-200">
+        <div class="text-center p-3 rounded-lg border" style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+          <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">IV</p>
+          <p class="mono font-semibold" style="color:var(--text-primary);">
             {% if trade.iv_entry %}{{ trade.iv_entry|floatformat:1 }}%{% else %}—{% endif %}
           </p>
         </div>
@@ -167,49 +174,57 @@
     {% endif %}
   </div>
 
-  <!-- Sidebar: linked journal -->
-  <div class="space-y-4">
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-sm font-semibold text-slate-200">Journal Entries</h3>
-        <a
-          href="{% url 'journal_new' %}?trade={{ trade.pk }}"
-          class="text-xs text-accent hover:underline"
-          >+ Add</a
-        >
+  <!-- ── Sidebar ────────────────────────────────── -->
+  <div class="space-y-5">
+
+    <!-- Linked journal entries -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="book-open" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+          <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Journal Entries</h3>
+        </div>
+        <a href="{% url 'journal_new' %}?trade={{ trade.pk }}"
+           class="text-xs text-accent hover:underline flex items-center gap-1">
+          <i data-lucide="plus" style="width:10px;height:10px;"></i> Add
+        </a>
       </div>
       {% if journal_entries %}
-      <div class="space-y-2">
+      <div class="space-y-1.5">
         {% for entry in journal_entries %}
-        <a
-          href="{% url 'journal_detail' entry.pk %}"
-          class="block px-3 py-2 bg-white/3 rounded-lg text-sm hover:bg-white/5 transition-colors"
-        >
-          <p class="text-slate-200 truncate">{{ entry.title }}</p>
-          <p class="text-xs text-slate-500">
-            {{ entry.entry_type }} · {{ entry.created_at|date:"M j" }}
-          </p>
+        <a href="{% url 'journal_detail' entry.pk %}"
+           class="block px-3 py-2.5 rounded-lg border transition-colors"
+           style="border-color:var(--border);background:rgba(255,255,255,0.015);"
+           onmouseover="this.style.background='rgba(255,255,255,0.04)'"
+           onmouseout="this.style.background='rgba(255,255,255,0.015)'">
+          <p class="text-sm truncate mb-0.5" style="color:var(--text-primary);">{{ entry.title }}</p>
+          <p class="text-xs" style="color:var(--text-secondary);">{{ entry.entry_type }} · {{ entry.created_at|date:"M j" }}</p>
         </a>
         {% endfor %}
       </div>
       {% else %}
-      <p class="text-xs text-slate-600">No linked entries.</p>
+      <p class="text-xs italic" style="color:var(--text-muted);">No linked entries.</p>
       {% endif %}
     </div>
 
+    <!-- Session info -->
     {% if trade.session %}
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h3 class="text-sm font-semibold text-slate-200 mb-2">Session</h3>
-      <a
-        href="{% url 'session_detail' trade.session.date|date:'Y-m-d' %}"
-        class="text-sm text-accent hover:underline"
-        >{{ trade.session.date }}</a
-      >
-      <p class="text-xs text-slate-500 mt-1">
-        Mindset: {{ trade.session.psychological_state }}/5 · {{ trade.session.market_bias }}
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <i data-lucide="calendar-days" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Session</h3>
+      </div>
+      <a href="{% url 'session_detail' trade.session.date|date:'Y-m-d' %}"
+         class="mono text-sm text-accent hover:underline">{{ trade.session.date }}</a>
+      <p class="text-xs mt-2" style="color:var(--text-secondary);">
+        Mindset {{ trade.session.psychological_state }}/5 ·
+        <span class="{% if trade.session.market_bias == 'BULLISH' %}text-profit{% elif trade.session.market_bias == 'BEARISH' %}text-loss{% else %}text-neutral{% endif %}">
+          {{ trade.session.market_bias }}
+        </span>
       </p>
     </div>
     {% endif %}
   </div>
+
 </div>
 {% endblock %}

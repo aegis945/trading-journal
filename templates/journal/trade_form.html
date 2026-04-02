@@ -1,54 +1,48 @@
 {% extends "base.html" %}
 {% load journal_extras %}
-{% block title %}
-{{ title }}{% endblock %} {% block page_title %}{{ title }}{% endblock %} {% block content %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+
 <div class="max-w-3xl" x-data="tradeForm()">
-  <div class="bg-[#161b27] rounded-xl border border-white/5 p-6">
+  <div class="card p-6 animate-in">
     <form method="POST">
       {% csrf_token %}
 
       <!-- Section: Basic -->
       <div class="mb-6">
-        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
-          Trade Info
-        </h3>
+        <h3 class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Trade Info</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs text-slate-400 mb-1"
-              >Session Date *</label
-            >
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Session Date *</label>
             {{ form.trade_date }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Symbol *</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Symbol *</label>
             {{ form.symbol }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1"
-              >Option Type *</label
-            >
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Option Type *</label>
             {{ form.option_type }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1"
-              >Trade Type *</label
-            >
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Trade Type *</label>
             {{ form.trade_type }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Strike *</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Strike *</label>
             {{ form.strike }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Expiry *</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Expiry *</label>
             {{ form.expiry }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Quantity *</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Quantity *</label>
             {{ form.quantity }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Status</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Status</label>
             {{ form.status }}
           </div>
         </div>
@@ -56,98 +50,79 @@
 
       <!-- Section: Pricing -->
       <div class="mb-6">
-        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
-          Entry / Exit
-        </h3>
+        <h3 class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Entry / Exit</h3>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs text-slate-400 mb-1"
-              >Entry Price * <span class="text-slate-600">(per share)</span></label
-            >
-            <input
-              type="number"
-              name="entry_price"
-              x-model="entryPrice"
-              value="{{ form.entry_price.value|default:'' }}"
-              step="0.01"
-              placeholder="5.50"
-              class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-            />
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">
+              Entry Price * <span style="color:var(--text-muted)">(per share)</span>
+            </label>
+            <input type="number" name="entry_price" x-model="entryPrice"
+              value="{{ form.entry_price.value|default:'' }}" step="0.01" placeholder="5.50"
+              class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+              style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Exit Price <span class="text-slate-600">(per share)</span></label>
-            <input
-              type="number"
-              name="exit_price"
-              x-model="exitPrice"
-              value="{{ form.exit_price.value|default:'' }}"
-              step="0.01"
-              placeholder="8.00"
-              class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
-            />
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">
+              Exit Price <span style="color:var(--text-muted)">(per share)</span>
+            </label>
+            <input type="number" name="exit_price" x-model="exitPrice"
+              value="{{ form.exit_price.value|default:'' }}" step="0.01" placeholder="8.00"
+              class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+              style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1"
-              >Entry Time *</label
-            >
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Entry Time *</label>
             {{ form.entry_time }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Exit Time</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Exit Time</label>
             {{ form.exit_time }}
           </div>
         </div>
 
         <!-- Live P&L preview -->
-        <div
-          class="mt-3 px-4 py-3 bg-white/3 rounded-lg flex items-center gap-6 text-sm"
-        >
-          <span class="text-slate-500">Est. P&L:</span>
-          <span
-            class="font-semibold"
+        <div class="mt-3 px-4 py-3 rounded-lg flex items-center gap-6 text-sm"
+          style="background:var(--bg-base);border:1px solid var(--border)">
+          <span style="color:var(--text-muted)">Est. P&amp;L:</span>
+          <span class="mono font-semibold"
             :class="pnl >= 0 ? 'text-profit' : 'text-loss'"
-            x-text="pnl !== null ? (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toFixed(2) : '—'"
-          ></span>
-          <span class="text-slate-500 ml-4">R:R:</span>
-          <span
-            class="font-semibold text-accent"
-            x-text="rr !== null ? parseFloat(rr.toFixed(2)) + ':1' : '—'"
-          ></span>
+            x-text="pnl !== null ? (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toFixed(2) : '—'"></span>
+          <span class="ml-4" style="color:var(--text-muted)">R:R:</span>
+          <span class="mono font-semibold" style="color:var(--accent)"
+            x-text="rr !== null ? parseFloat(rr.toFixed(2)) + ':1' : '—'"></span>
         </div>
       </div>
 
       <!-- Section: Greeks -->
       <div class="mb-6">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-xs text-slate-500 uppercase tracking-wider">
-            Greeks at Entry
-          </h3>
-          <button
-            type="button"
+          <h3 class="text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">Greeks at Entry</h3>
+          <button type="button"
             hx-get="{% url 'ibkr_greeks' %}"
             hx-include="[name='symbol'],[name='expiry'],[name='strike'],[name='option_type']"
             hx-on::after-request="fillGreeks(event)"
-            class="text-xs px-2 py-1 border border-accent/30 text-accent hover:bg-accent/10 rounded transition-colors"
+            class="text-xs px-2 py-1 rounded transition-colors"
+            style="border:1px solid rgba(59,130,246,0.3);color:var(--accent)"
             id="fetch-greeks-btn"
-          >
+            onmouseover="this.style.background='var(--accent-glow)'" onmouseout="this.style.background=''">
             Fetch from TWS
           </button>
         </div>
         <div class="grid grid-cols-4 gap-4">
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Delta</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Delta</label>
             {{ form.delta_entry }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Theta</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Theta</label>
             {{ form.theta_entry }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Vega</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Vega</label>
             {{ form.vega_entry }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">IV</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">IV</label>
             {{ form.iv_entry }}
           </div>
         </div>
@@ -155,38 +130,30 @@
 
       <!-- Section: Risk -->
       <div class="mb-6">
-        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
-          Risk Management
-        </h3>
+        <h3 class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Risk Management</h3>
         <div class="grid grid-cols-4 gap-4">
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Stop Loss <span class="text-slate-600">(per share)</span></label>
-            <input
-              type="number"
-              name="planned_stop_loss"
-              x-model="stopLoss"
-              value="{{ form.planned_stop_loss.value|default:'' }}"
-              step="0.01"
-              class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent"
-            />
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">
+              Stop Loss <span style="color:var(--text-muted)">(per share)</span>
+            </label>
+            <input type="number" name="planned_stop_loss" x-model="stopLoss"
+              value="{{ form.planned_stop_loss.value|default:'' }}" step="0.01"
+              class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+              style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">TP 1</label>
-            <input
-              type="number"
-              name="planned_take_profit_1"
-              x-model="tp1"
-              value="{{ form.planned_take_profit_1.value|default:'' }}"
-              step="0.01"
-              class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent"
-            />
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">TP 1</label>
+            <input type="number" name="planned_take_profit_1" x-model="tp1"
+              value="{{ form.planned_take_profit_1.value|default:'' }}" step="0.01"
+              class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+              style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)" />
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">TP 2</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">TP 2</label>
             {{ form.planned_take_profit_2 }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">TP 3</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">TP 3</label>
             {{ form.planned_take_profit_3 }}
           </div>
         </div>
@@ -194,63 +161,53 @@
 
       <!-- Section: Notes & Tags -->
       <div class="mb-6">
-        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
-          Notes & Classification
-        </h3>
+        <h3 class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Notes &amp; Classification</h3>
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-xs text-slate-400 mb-1"
-              >Strategy Tags</label
-            >
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Strategy Tags</label>
             {{ form.strategy_tags_text }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1"
-              >Setup Quality (1–5)</label
-            >
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Setup Quality (1–5)</label>
             {{ form.setup_quality }}
           </div>
         </div>
         <div class="mb-4">
-          <label class="block text-xs text-slate-400 mb-1"
-            >Trade Notes (rationale)</label
-          >
+          <label class="block text-xs mb-1" style="color:var(--text-secondary)">Trade Notes (rationale)</label>
           {{ form.trade_notes }}
         </div>
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Exit Notes</label>
+          <label class="block text-xs mb-1" style="color:var(--text-secondary)">Exit Notes</label>
           {{ form.exit_notes }}
         </div>
       </div>
 
       {% if form.errors %}
-      <div
-        class="mb-4 p-3 bg-loss/10 border border-loss/20 rounded-lg text-loss text-sm"
-      >
-        {% for field, errors in form.errors.items %} {% for err in errors %}
+      <div class="mb-4 p-3 rounded-lg text-sm" style="background:var(--loss-glow);border:1px solid rgba(244,63,94,0.2);color:var(--loss)">
+        {% for field, errors in form.errors.items %}{% for err in errors %}
         <p>{{ field }}: {{ err }}</p>
-        {% endfor %} {% endfor %}
+        {% endfor %}{% endfor %}
       </div>
       {% endif %}
 
       <div class="flex justify-end gap-3">
-        <a
-          href="{% url 'trade_list' %}"
-          class="px-4 py-2 text-sm rounded-lg border border-white/10 text-slate-400 hover:bg-white/5"
-        >
-          Cancel
-        </a>
-        <button
-          type="submit"
-          class="px-5 py-2 text-sm bg-accent hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
-        >
-          Save Trade
+        <a href="{% url 'trade_list' %}"
+          class="px-4 py-2 text-sm rounded-lg transition-colors"
+          style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+          onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Cancel</a>
+        <button type="submit"
+          class="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-lg transition-colors"
+          style="background:var(--accent);color:#fff"
+          onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+          <i data-lucide="save" style="width:14px;height:14px"></i> Save Trade
         </button>
       </div>
     </form>
   </div>
 </div>
 
+{% endblock %}
+{% block extra_scripts %}
 <script>
   function tradeForm() {
     return {

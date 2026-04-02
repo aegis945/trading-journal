@@ -1,51 +1,48 @@
 {% extends "base.html" %}
-{% block title %}
-Checklist Templates{% endblock %} {% block page_title %}Checklist Templates{% endblock %} {% block header_actions %}
-<a
-  href="{% url 'checklist_template_new' %}"
-  class="px-3 py-1.5 text-xs bg-accent hover:bg-blue-600 text-white rounded-lg"
-  >+ New Template</a
->
-{% endblock %} {% block content %}
+{% block title %}Checklist Templates{% endblock %}
+{% block page_title %}Checklist Templates{% endblock %}
+{% block header_actions %}
+<a href="{% url 'checklist_template_new' %}"
+  class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+  style="background:var(--accent);color:#fff"
+  onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+  <i data-lucide="plus" style="width:12px;height:12px"></i> New Template
+</a>
+{% endblock %}
+{% block content %}
+
 <div class="space-y-3 max-w-2xl">
   {% if not templates %}
-  <div
-    class="bg-[#161b27] rounded-xl border border-white/5 p-8 text-center text-slate-500"
-  >
-    No checklist templates.
+  <div class="card p-8 text-center animate-in">
+    <i data-lucide="list-checks" class="mx-auto mb-3" style="width:32px;height:32px;opacity:0.3"></i>
+    <p class="text-sm" style="color:var(--text-muted)">No checklist templates.</p>
   </div>
-  {% endif %} {% for cl in templates %}
-  <div
-    class="bg-[#161b27] rounded-xl border border-white/5 p-4 flex items-center gap-4"
-  >
+  {% endif %}
+  {% for cl in templates %}
+  <div class="card p-4 flex items-center gap-4 animate-in" style="animation-delay:{{ forloop.counter0 }}0ms">
     <div class="flex-1">
-      <p class="text-sm font-medium text-slate-200">
-        {{ cl.name }} {% if cl.is_active %}<span
-          class="ml-2 text-xs px-1.5 py-0.5 rounded bg-profit/10 text-profit"
-          >Active</span
-        >{% endif %}
+      <p class="text-sm font-medium" style="color:var(--text-primary)">
+        {{ cl.name }}
+        {% if cl.is_active %}
+        <span class="ml-2 text-xs px-1.5 py-0.5 rounded" style="background:var(--profit-glow);color:var(--profit)">Active</span>
+        {% endif %}
       </p>
-      <p class="text-xs text-slate-500 mt-0.5">
-        {{ cl.items|length }} item{{ cl.items|length|pluralize }}
-      </p>
+      <p class="text-xs mt-0.5" style="color:var(--text-secondary)">{{ cl.items|length }} item{{ cl.items|length|pluralize }}</p>
     </div>
-    <div class="flex gap-3 text-xs">
+    <div class="flex gap-4 text-xs">
       {% if not cl.is_active %}
-      <form
-        method="POST"
-        action="{% url 'checklist_template_activate' cl.pk %}"
-      >
+      <form method="POST" action="{% url 'checklist_template_activate' cl.pk %}">
         {% csrf_token %}
-        <button class="text-accent hover:underline">Activate</button>
+        <button class="transition-colors" style="color:var(--accent)"
+          onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">Activate</button>
       </form>
       {% endif %}
-      <a
-        href="{% url 'checklist_template_edit' cl.pk %}"
-        class="text-slate-400 hover:text-white"
-        >Edit</a
-      >
+      <a href="{% url 'checklist_template_edit' cl.pk %}" class="transition-colors"
+        style="color:var(--text-secondary)"
+        onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Edit</a>
     </div>
   </div>
   {% endfor %}
 </div>
+
 {% endblock %}

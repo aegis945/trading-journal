@@ -1,165 +1,149 @@
 {% extends "base.html" %}
 {% load journal_extras %}
-{% block title %}
-Session {{ session.date }}{% endblock %} {% block page_title %}Session — {{ session.date|date:"l, N j Y" }}{% endblock %} {% block content %}
+{% block title %}Session {{ session.date }}{% endblock %}
+{% block page_title %}Session — {{ session.date|date:"l, N j Y" }}{% endblock %}
+{% block content %}
+
 <div class="grid grid-cols-3 gap-6">
-  <!-- Pre-market notes form -->
-  <div class="col-span-2 space-y-4">
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <h2 class="text-sm font-semibold text-slate-200 mb-4">
-        Pre-Market Notes
-      </h2>
+
+  <!-- Pre-market notes form + trades -->
+  <div class="col-span-2 space-y-5">
+
+    <div class="card p-5 animate-in">
+      <h2 class="text-sm font-semibold mb-4" style="color:var(--text-primary)">Pre-Market Notes</h2>
       <form method="POST">
         {% csrf_token %}
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Market Bias</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Market Bias</label>
             {{ form.market_bias }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">VIX</label>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">VIX</label>
             {{ form.vix_level }}
           </div>
         </div>
         <div class="mb-4">
-          <label class="block text-xs text-slate-400 mb-1"
-            >Psychological State (1–5)</label
-          >
+          <label class="block text-xs mb-1" style="color:var(--text-secondary)">Psychological State (1–5)</label>
           {{ form.psychological_state }}
         </div>
         <div class="mb-4">
-          <label class="block text-xs text-slate-400 mb-1"
-            >Mental/Physical Notes</label
-          >
+          <label class="block text-xs mb-1" style="color:var(--text-secondary)">Mental / Physical Notes</label>
           {{ form.psychological_notes }}
         </div>
         <div class="mb-4">
-          <label class="block text-xs text-slate-400 mb-1"
-            >Market Context Notes</label
-          >
+          <label class="block text-xs mb-1" style="color:var(--text-secondary)">Market Context Notes</label>
           {{ form.market_open_notes }}
         </div>
-        <div class="pt-3 border-t border-white/5">
-          <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
-            Post-Session Reflection
-          </h3>
+
+        <div class="pt-4 mt-2" style="border-top:1px solid var(--border)">
+          <p class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Post-Session Reflection</p>
           <div class="mb-4">
-            <label class="block text-xs text-slate-400 mb-1"
-              >Session Notes</label
-            >
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Session Notes</label>
             {{ form.session_notes }}
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1"
-              >Lessons Learned</label
-            >
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Lessons Learned</label>
             {{ form.lessons_learned }}
           </div>
         </div>
-        <div class="flex justify-end mt-4">
-          <button
-            type="submit"
-            class="px-4 py-2 text-sm bg-accent hover:bg-blue-500 text-white rounded-lg transition-colors"
-          >
-            Save Session
+
+        <div class="flex justify-end mt-5">
+          <button type="submit"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+            style="background:var(--accent);color:#fff"
+            onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            <i data-lucide="save" style="width:14px;height:14px"></i> Save Session
           </button>
         </div>
       </form>
     </div>
 
     <!-- Session trades -->
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-semibold text-slate-200">Trades</h2>
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold {{ total_pnl|pnl_color }}">
+    <div class="card p-5 animate-in" style="animation-delay:60ms">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold" style="color:var(--text-primary)">Trades</h2>
+        <div class="flex items-center gap-3">
+          <span class="mono text-sm font-semibold"
+            style="color:{% if total_pnl > 0 %}var(--profit){% elif total_pnl < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
             Session P&L: {{ total_pnl|pnl_str }}
           </span>
-          <a
-            href="{% url 'trade_add' %}"
-            class="text-xs text-accent hover:underline"
-            >+ Add Trade</a
-          >
+          <a href="{% url 'trade_add' %}"
+            class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+            style="background:var(--accent-glow);color:var(--accent);border:1px solid rgba(59,130,246,0.2)"
+            onmouseover="this.style.background='rgba(59,130,246,0.2)'" onmouseout="this.style.background='var(--accent-glow)'">
+            <i data-lucide="plus" style="width:12px;height:12px"></i> Add Trade
+          </a>
         </div>
       </div>
       <div class="space-y-1">
         {% for trade in trades %}
-        <a
-          href="{% url 'trade_detail' trade.pk %}"
-          class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm {% if trade.pnl and trade.pnl > 0 %}bg-profit/5 hover:bg-profit/10 {% elif trade.pnl and trade.pnl < 0 %}bg-loss/5 hover:bg-loss/10 {% else %}bg-white/3 hover:bg-white/5{% endif %} transition-colors"
-        >
-          <span class="text-slate-300">
+        <a href="{% url 'trade_detail' trade.pk %}"
+          class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors"
+          style="background:{% if trade.pnl and trade.pnl > 0 %}var(--profit-glow){% elif trade.pnl and trade.pnl < 0 %}var(--loss-glow){% else %}var(--bg-elevated){% endif %}"
+          onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+          <span class="font-medium" style="color:var(--text-primary)">
             {{ trade.option_type }} {{ trade.strike }}
-            <span class="text-slate-500 text-xs ml-1"
-              >{{ trade.get_trade_type_display }}</span
-            >
+            <span class="text-xs ml-1.5" style="color:var(--text-muted)">{{ trade.get_trade_type_display }}</span>
           </span>
-          <div class="flex items-center gap-3">
-            <span class="text-xs text-slate-500"
-              >{{ trade.entry_time }}{% if trade.exit_time %} – {{ trade.exit_time }}{% endif %}</span
-            >
+          <div class="flex items-center gap-4">
+            <span class="mono text-xs" style="color:var(--text-muted)">
+              {{ trade.entry_time }}{% if trade.exit_time %} – {{ trade.exit_time }}{% endif %}
+            </span>
             {% if trade.pnl is not None %}
-            <span class="text-xs font-semibold {{ trade.pnl|pnl_color }}">
+            <span class="mono text-xs font-semibold"
+              style="color:{% if trade.pnl > 0 %}var(--profit){% else %}var(--loss){% endif %}">
               {{ trade.pnl|pnl_str }}
             </span>
             {% else %}
-            <span
-              class="text-xs px-1.5 py-0.5 rounded bg-neutral/10 text-neutral"
-              >OPEN</span
-            >
+            <span class="text-xs px-1.5 py-0.5 rounded" style="background:var(--bg-base);color:var(--neutral)">OPEN</span>
             {% endif %}
           </div>
         </a>
         {% empty %}
-        <p class="py-6 text-center text-sm text-slate-600">
-          No trades for this session.
-        </p>
+        <p class="py-8 text-center text-sm" style="color:var(--text-muted)">No trades for this session.</p>
         {% endfor %}
       </div>
     </div>
-  </div>
+
+  </div><!-- /col-span-2 -->
 
   <!-- Checklist sidebar -->
   <div>
-    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5 sticky top-6">
+    <div class="card p-5 sticky top-6 animate-in" style="animation-delay:120ms">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-slate-200">
-          Pre-Trade Checklist
-        </h2>
+        <h2 class="text-sm font-semibold" style="color:var(--text-primary)">Pre-Trade Checklist</h2>
         {% if daily_routine.checklist_template %}
-        <span id="checklist-pct" class="text-xs text-slate-500"
-          >{{ daily_routine.completion_percent }}%</span
-        >
+        <span id="checklist-pct" class="mono text-xs" style="color:var(--text-secondary)">{{ daily_routine.completion_percent }}%</span>
         {% endif %}
       </div>
 
       {% if daily_routine.checklist_template %}
-      <div class="w-full h-1.5 bg-white/5 rounded-full mb-4">
-        <div
-          id="checklist-bar"
-          class="h-1.5 rounded-full bg-accent transition-all duration-300"
-          style="width: {{ daily_routine.completion_percent }}%"
-        ></div>
+      <div class="w-full rounded-full mb-4" style="height:4px;background:var(--bg-base)">
+        <div id="checklist-bar" class="rounded-full transition-all duration-300"
+          style="height:4px;width:{{ daily_routine.completion_percent }}%;background:var(--accent)"></div>
       </div>
 
       <div id="checklist-item-list">
-      {% regroup daily_routine.checklist_template.items by category as grouped_items %} {% for group in grouped_items %} {% if group.grouper %}
-      <p class="text-xs text-slate-500 uppercase tracking-wider mt-3 mb-1.5">
-        {{ group.grouper }}
-      </p>
-      {% endif %} {% for item in group.list %} {% include "components/checklist_item.html" with item=item checked=daily_routine.completed_items|get_item:item.id session=session %}
-      {% endfor %} {% endfor %}
-      </div> {% else %}
-      <p class="text-sm text-slate-600">
+        {% regroup daily_routine.checklist_template.items by category as grouped_items %}
+        {% for group in grouped_items %}
+          {% if group.grouper %}
+          <p class="text-xs uppercase tracking-wider mt-4 mb-2" style="color:var(--text-muted)">{{ group.grouper }}</p>
+          {% endif %}
+          {% for item in group.list %}
+            {% include "components/checklist_item.html" with item=item checked=daily_routine.completed_items|get_item:item.id session=session %}
+          {% endfor %}
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <p class="text-sm" style="color:var(--text-muted)">
         No active checklist.
-        <a
-          href="{% url 'settings_checklist' %}"
-          class="text-accent hover:underline"
-          >Configure →</a
-        >
+        <a href="{% url 'settings_checklist' %}" style="color:var(--accent)">Configure &rarr;</a>
       </p>
       {% endif %}
     </div>
   </div>
+
 </div>
 {% endblock %}

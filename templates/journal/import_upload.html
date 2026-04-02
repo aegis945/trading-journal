@@ -1,37 +1,37 @@
 {% extends "base.html" %}
-{% block title %}
-Import Trades{% endblock %} {% block page_title %}Import Trades{% endblock %} {% block content %}
-<div class="max-w-md bg-[#161b27] rounded-xl border border-white/5 p-6">
-  <p class="text-xs text-slate-500 mb-4">
-    Upload an IBKR Activity Statement CSV to import trades. The parser will
-    detect the Trades section automatically.
-  </p>
+{% block title %}Import Trades{% endblock %}
+{% block page_title %}Import Trades{% endblock %}
+{% block content %}
+
+<div class="max-w-md card p-6 animate-in">
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:var(--accent-glow)">
+      <i data-lucide="upload" style="width:16px;height:16px;color:var(--accent)"></i>
+    </div>
+    <p class="text-xs" style="color:var(--text-secondary)">Upload an IBKR Activity Statement CSV to import trades. The parser will detect the Trades section automatically.</p>
+  </div>
   <form method="POST" enctype="multipart/form-data" class="space-y-4">
     {% csrf_token %}
     <div>
-      <label class="block text-xs font-medium text-slate-400 mb-1"
-        >Activity Statement CSV</label
-      >
-      <input
-        type="file"
-        name="csv_file"
-        accept=".csv"
-        class="w-full text-sm text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-accent file:text-white hover:file:bg-blue-600 cursor-pointer"
+      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">Activity Statement CSV</label>
+      <input type="file" name="csv_file" accept=".csv"
+        class="w-full text-sm cursor-pointer rounded-lg"
+        style="color:var(--text-secondary)"
       />
     </div>
-    <div class="flex gap-3">
-      <a
-        href="{% url 'settings_index' %}"
-        class="px-4 py-2 text-sm border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
-        >Cancel</a
-      >
-      <button
-        type="submit"
-        class="px-4 py-2 text-sm bg-accent hover:bg-blue-600 text-white rounded-lg"
-      >
-        Parse CSV
+    <div class="flex gap-3 pt-1">
+      <a href="{% url 'settings_index' %}"
+        class="px-4 py-2 text-sm rounded-lg transition-colors"
+        style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+        onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Cancel</a>
+      <button type="submit"
+        class="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+        style="background:var(--accent);color:#fff"
+        onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+        <i data-lucide="file-search" style="width:13px;height:13px"></i> Parse CSV
       </button>
     </div>
   </form>
 </div>
+
 {% endblock %}
