@@ -1,13 +1,12 @@
 {% load journal_extras %}
-{# Active state auto-detected via request.path; exact match for /, prefix match otherwise #}
+{# Active state: exact match for /, prefix match otherwise #}
 <a
   href="{{ href }}"
-  class="flex items-center gap-3 px-2 py-2 rounded-lg text-sm font-medium transition-colors {% if href == '/' %}{% if request.path == '/' %}bg-accent/15 text-accent{% else %}text-slate-400 hover:bg-white/5 hover:text-slate-200{% endif %}{% else %}{% if request.path|startswith:href %}bg-accent/15 text-accent{% else %}text-slate-400 hover:bg-white/5 hover:text-slate-200{% endif %}{% endif %}"
+  class="nav-item{% if href == '/' %}{% if request.path == '/' %} active{% endif %}{% else %}{% if request.path|startswith:href %} active{% endif %}{% endif %}"
 >
-  <span class="w-5 text-center flex-shrink-0 text-base leading-none"
-    >{{ icon }}</span
-  >
-  <span class="truncate" :class="sidebarOpen ? 'block' : 'hidden'"
-    >{{ label }}</span
-  >
+  <i data-lucide="{{ icon }}" class="nav-icon flex-shrink-0"></i>
+  <span
+    class="nav-label truncate"
+    :class="sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+  >{{ label }}</span>
 </a>
