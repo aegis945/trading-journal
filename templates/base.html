@@ -42,9 +42,6 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
-    <!-- canvas-confetti (checklist 100% completion) -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-
     <!-- EasyMDE (Markdown editor) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
@@ -525,9 +522,6 @@
           var percent = total > 0 ? Math.round(checked / total * 100) : 0;
           bar.style.width  = percent + '%';
           pct.textContent  = percent + '%';
-          if (percent === 100 && window.confetti) {
-            confetti({ particleCount: 90, spread: 65, origin: { y: 0.6 } });
-          }
         }
         // Re-init Lucide icons inside HTMX-swapped fragments
         if (window.lucide) lucide.createIcons();
