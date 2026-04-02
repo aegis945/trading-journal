@@ -382,6 +382,8 @@
           <!-- Market status (centred) -->
           <div class="hidden lg:flex items-center gap-3 absolute left-1/2 -translate-x-1/2">
             <span id="market-date" class="mono text-xs" style="color: var(--text-secondary);"></span>
+            <span class="mono text-xs" style="color:var(--text-muted)">·</span>
+              <span id="market-date-ny" class="mono text-xs" style="color: var(--text-secondary);"></span>
             <span id="market-status" class="text-xs px-2.5 py-0.5 rounded-full font-medium"></span>
           </div>
 
@@ -459,7 +461,12 @@
           var statusEl = document.getElementById('market-status');
           if (!statusEl) return;
           if (dateEl) {
-            dateEl.textContent = et.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+            var now = new Date();
+            dateEl.textContent = now.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Vilnius', hour12:false }) + ' VLN';
+          }
+          var nyEl = document.getElementById('market-date-ny');
+          if (nyEl) {
+            nyEl.textContent = et.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) + ' NY';
           }
           var label, bg, color;
           if (day === 0 || day === 6) {
