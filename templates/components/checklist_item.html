@@ -9,7 +9,7 @@ Variables: item (dict with id, label, category), checked (bool), session (Tradin
     hx-target="#checklist-item-{{ item.id }}"
     hx-swap="outerHTML"
     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-    class="flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors bg-accent"
+    class="flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors{% if checked %} bg-accent{% endif %}"
     style="{% if checked %}background:var(--accent);border:1px solid var(--accent){% else %}background:transparent;border:1px solid rgba(255,255,255,0.15){% endif %}"
     title="Toggle">
     {% if checked %}<span class="block text-white text-center leading-none" style="font-size:9px;line-height:1">✓</span>{% endif %}
