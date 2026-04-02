@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Django
+*.sqlite3
+db.sqlite3
+local_settings.py
+/static/collected/
+/staticfiles/
+/media/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs & temp files
+*.log
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Migrations (optional — keep if you want to track schema changes)
+# */migrations/
+
+# Uploads / imported CSVs
+/uploads/
+*.csv
+
+# Test/coverage
+.coverage
+htmlcov/
+.pytest_cache/
