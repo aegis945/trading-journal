@@ -1,0 +1,212 @@
+"""
+analytics/views.py
+
+Phase 1: stub views returning JSON endpoints.
+Charts are wired to Chart.js on the analytics page.
+Full aggregation logic implemented here — Phase 4.
+"""
+
+import datetime
+from collections import defaultdict
+from decimal import Decimal
+
+from django.db.models import Avg, Count, Sum, Q
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.utils import timezone
+
+from journal.models import Trade, TradingSession, TradeStatus
+
+
+def analytics_index(request):
+    periods = [('7d', '7'), ('30d', '30'), ('90d', '90'), ('All', '')]
+    return render(request, 'analytics/index.html', {'periods': periods})
+
+
+def performance_review(request):
+    return render(request, 'analytics/review.html', {})
+
+
+def _closed_qs(request):
+    """Base queryset for closed/expired trades, optional ?days= filter."""
+    days = request.GET.get('days')
+    qs   = Trade.objects.filter(status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED], pnl__isnull=False)
+    if days:
+        cutoff = timezone.localdate() - datetime.timedelta(days=int(days))
+        qs = qs.filter(trade_date__gte=cutoff)
+    return qs
+
+
+def data_win_rate_by_tag(request):
+    qs = _closed_qs(request)
+    tag_data: dict[str, dict] = defaultdict(lambda: {'wins': 0, 'total': 0})
+    for row in qs.values('strategy_tags', 'pnl'):
+        for tag in (row['strategy_tags'] or []):
+            tag_data[tag]['total'] += 1
+            if row['pnl'] > 0:
+                tag_data[tag]['wins'] += 1
+    labels, win_rates = [], []
+    for tag, d in sorted(tag_data.items(), key=lambda x: -x[1]['total']):
+        labels.append(tag)
+        win_rates.append(round(d['wins'] / d['total'] * 100, 1) if d['total'] else 0)
+    return JsonResponse({'labels': labels, 'win_rates': win_rates})
+
+
+def data_pnl_by_weekday(request):
+    """Avg P&L and win rate grouped by day of week (Mon–Fri)."""
+    DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    qs = _closed_qs(request).values('trade_date', 'pnl')
+    slots: dict[int, list] = {i: [] for i in range(5)}
+    for row in qs:
+        dow = row['trade_date'].weekday()  # 0=Mon … 4=Fri
+        if dow < 5:
+            slots[dow].append(float(row['pnl']))
+    labels, avg_pnl, win_rates, counts = [], [], [], []
+    for i in range(5):
+        vals = slots[i]
+        labels.append(DAYS[i])
+        avg_pnl.append(round(sum(vals) / len(vals), 2) if vals else 0)
+        win_rates.append(round(sum(1 for v in vals if v > 0) / len(vals) * 100, 1) if vals else 0)
+        counts.append(len(vals))
+    return JsonResponse({'labels': labels, 'avg_pnl': avg_pnl, 'win_rates': win_rates, 'counts': counts})
+
+
+def data_pnl_by_time(request):
+    """P&L bucketed by 30-min intervals (ET), 9:30–16:00."""
+    qs    = _closed_qs(request).values('entry_time', 'pnl')
+    slots = defaultdict(list)
+    for row in qs:
+        t = row['entry_time']
+        # bucket: floor to 30 min
+        minute_bucket = (t.minute // 30) * 30
+        label = f'{t.hour:02d}:{minute_bucket:02d}'
+        slots[label].append(float(row['pnl']))
+    labels    = sorted(slots.keys())
+    avg_pnl   = [round(sum(slots[l]) / len(slots[l]), 2) for l in labels]
+    return JsonResponse({'labels': labels, 'avg_pnl': avg_pnl})
+
+
+def data_psych_vs_outcome(request):
+    result = []
+    for state in range(1, 6):
+        qs = _closed_qs(request).filter(session__psychological_state=state)
+        agg = qs.aggregate(avg_pnl=Avg('pnl'), count=Count('id'))
+        wins = qs.filter(pnl__gt=0).count()
+        total = agg['count'] or 0
+        result.append({
+            'state': state,
+            'avg_pnl': round(float(agg['avg_pnl'] or 0), 2),
+            'win_rate': round(wins / total * 100, 1) if total else 0,
+            'count': total,
+        })
+    return JsonResponse({'data': result})
+
+
+def data_delta_vs_pnl(request):
+    rows = _closed_qs(request).filter(
+        delta_entry__isnull=False
+    ).values('delta_entry', 'pnl')[:500]
+    points = [{'x': float(r['delta_entry']), 'y': float(r['pnl'])} for r in rows]
+    return JsonResponse({'points': points})
+
+
+def data_streak(request):
+    trades = list(
+        _closed_qs(request).order_by('trade_date', 'entry_time').values('trade_date', 'pnl')
+    )
+    streaks = []
+    if not trades:
+        return JsonResponse({'streaks': []})
+    current_type = 'WIN' if trades[0]['pnl'] > 0 else 'LOSS'
+    count = 0
+    start = str(trades[0]['trade_date'])
+    for t in trades:
+        is_win = t['pnl'] > 0
+        t_type = 'WIN' if is_win else 'LOSS'
+        if t_type == current_type:
+            count += 1
+        else:
+            streaks.append({'type': current_type, 'count': count, 'start': start})
+            current_type = t_type
+            count = 1
+            start = str(t['trade_date'])
+    streaks.append({'type': current_type, 'count': count, 'start': start})
+    return JsonResponse({'streaks': streaks})
+
+
+def data_drawdown(request):
+    trades = list(
+        _closed_qs(request).order_by('trade_date', 'entry_time').values('trade_date', 'pnl')
+    )
+    labels, equity, drawdown = [], [], []
+    peak = Decimal('0')
+    cumulative = Decimal('0')
+    for t in trades:
+        cumulative += t['pnl']
+        if cumulative > peak:
+            peak = cumulative
+        dd = float(cumulative - peak)
+        labels.append(str(t['trade_date']))
+        equity.append(float(cumulative))
+        drawdown.append(dd)
+    return JsonResponse({'labels': labels, 'equity': equity, 'drawdown': drawdown})
+
+
+def data_setup_quality(request):
+    result = []
+    for q in range(1, 6):
+        qs  = _closed_qs(request).filter(setup_quality=q)
+        agg = qs.aggregate(avg_pnl=Avg('pnl'), count=Count('id'))
+        wins = qs.filter(pnl__gt=0).count()
+        total = agg['count'] or 0
+        result.append({
+            'quality': q,
+            'avg_pnl': round(float(agg['avg_pnl'] or 0), 2),
+            'win_rate': round(wins / total * 100, 1) if total else 0,
+            'count': total,
+        })
+    return JsonResponse({'data': result})
+
+
+def data_duration_vs_pnl(request):
+    from datetime import datetime as dt, timedelta
+    rows = _closed_qs(request).filter(
+        exit_time__isnull=False
+    ).values('entry_time', 'exit_time', 'pnl')[:500]
+    points = []
+    for r in rows:
+        et = r['entry_time']
+        xt = r['exit_time']
+        # duration in minutes
+        entry_mins = et.hour * 60 + et.minute
+        exit_mins  = xt.hour * 60 + xt.minute
+        duration   = exit_mins - entry_mins
+        if duration > 0:
+            points.append({'x': duration, 'y': float(r['pnl'])})
+    return JsonResponse({'points': points})
+
+
+def data_monthly_table(request):
+    from itertools import groupby
+    rows = _closed_qs(request).order_by('trade_date').values('trade_date', 'pnl', 'risk_reward_ratio')
+    months: dict[str, dict] = defaultdict(lambda: {'trades': 0, 'wins': 0, 'pnl': Decimal('0'), 'rr_sum': Decimal('0'), 'rr_count': 0})
+    for r in rows:
+        key = r['trade_date'].strftime('%Y-%m')
+        m   = months[key]
+        m['trades'] += 1
+        m['pnl']    += r['pnl']
+        if r['pnl'] > 0:
+            m['wins'] += 1
+        if r['risk_reward_ratio']:
+            m['rr_sum']   += r['risk_reward_ratio']
+            m['rr_count'] += 1
+    table = []
+    for month, m in sorted(months.items()):
+        table.append({
+            'month': month,
+            'trades': m['trades'],
+            'win_rate': round(m['wins'] / m['trades'] * 100, 1) if m['trades'] else 0,
+            'total_pnl': float(m['pnl']),
+            'avg_rr': round(float(m['rr_sum'] / m['rr_count']), 2) if m['rr_count'] else None,
+        })
+    return JsonResponse({'table': table})
