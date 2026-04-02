@@ -29,4 +29,4 @@ python manage.py seed_data   # optional sample data
 python manage.py runserver
 ```
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+Open [http://127.0.0.1:8001](http://127.0.0.1:8001).
