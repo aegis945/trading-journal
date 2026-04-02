@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load journal_extras %}
+{% block title %}
+Journal{% endblock %} {% block page_title %}Journal{% endblock %} {% block header_actions %}
+<a
+  href="{% url 'journal_new' %}"
+  class="px-3 py-1.5 text-xs font-medium border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg transition-colors"
+>
+  + New Entry
+</a>
+{% endblock %} {% block content %}
+<div class="space-y-4">
+  <!-- Filters -->
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Type</label>
+      <select
+        name="entry_type"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-accent"
+      >
+        <option value="">All Types</option>
+        {% for val, label in entry_type_choices %}
+        <option
+          value="{{ val }}"
+          {% if filters.entry_type == val %}selected{% endif %}
+        >
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Tag</label>
+      <input
+        type="text"
+        name="tag"
+        value="{{ filters.tag }}"
+        placeholder="discipline…"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-accent"
+      />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Search</label>
+      <input
+        type="text"
+        name="q"
+        value="{{ filters.q }}"
+        placeholder="Search entries…"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-accent"
+      />
+    </div>
+    <button
+      type="submit"
+      class="px-4 py-1.5 text-sm bg-accent hover:bg-blue-500 text-white rounded-lg transition-colors"
+    >
+      Search
+    </button>
+    <a
+      href="{% url 'journal_list' %}"
+      class="px-4 py-1.5 text-sm text-slate-400 hover:text-slate-200"
+      >Clear</a
+    >
+  </form>
+
+  <!-- Entry list -->
+  <div class="space-y-2">
+    {% for entry in entries %}
+    <a
+      href="{% url 'journal_detail' entry.pk %}"
+      class="flex items-start gap-4 px-4 py-3 bg-[#161b27] rounded-xl border border-white/5 hover:border-accent/20 transition-colors group"
+    >
+      <span
+        class="flex-shrink-0 text-xs px-2 py-1 rounded bg-accent/10 text-accent mt-0.5 min-w-[80px] text-center"
+      >
+        {{ entry.entry_type }}
+      </span>
+      <div class="flex-1 min-w-0">
+        <h3
+          class="text-sm font-medium text-slate-200 group-hover:text-white truncate"
+        >
+          {{ entry.title }}
+        </h3>
+        {% if entry.tags %}
+        <div class="flex flex-wrap gap-1 mt-1">
+          {% for tag in entry.tags %}
+          <span class="text-xs px-1.5 py-0.5 rounded bg-white/5 text-slate-500"
+            >{{ tag }}</span
+          >
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <span class="flex-shrink-0 text-xs text-slate-600"
+        >{{ entry.created_at|date:"M j, Y" }}</span
+      >
+    </a>
+    {% empty %}
+    <div class="py-12 text-center text-slate-600">
+      No journal entries yet.
+      <a href="{% url 'journal_new' %}" class="text-accent hover:underline ml-1"
+        >Write your first one →</a
+      >
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

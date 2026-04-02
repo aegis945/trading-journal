@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load journal_extras %}
+{% block title %}
+Calendar{% endblock %} {% block page_title %}Calendar{% endblock %} {% block content %}
+<div class="space-y-4">
+  <!-- Month navigation -->
+  <div class="flex items-center justify-between">
+    <a
+      href="?year={{ prev_year }}&month={{ prev_month }}"
+      class="px-3 py-1.5 text-sm border border-white/10 rounded-lg text-slate-400 hover:bg-white/5 transition-colors"
+    >
+      ← Prev
+    </a>
+    <h2 class="text-base font-semibold text-slate-200">
+      {{ month_name }} {{ year }}
+    </h2>
+    <a
+      href="?year={{ next_year }}&month={{ next_month }}"
+      class="px-3 py-1.5 text-sm border border-white/10 rounded-lg text-slate-400 hover:bg-white/5 transition-colors"
+    >
+      Next →
+    </a>
+  </div>
+
+  <!-- Calendar grid -->
+  <div class="bg-[#161b27] rounded-xl border border-white/5 overflow-hidden">
+    <!-- Day headers -->
+    <div class="grid grid-cols-7 border-b border-white/5">
+      {% for day_name in "Mon,Tue,Wed,Thu,Fri,Sat,Sun"|split:"," %}
+      <div class="px-2 py-2 text-xs text-slate-500 text-center">
+        {{ day_name }}
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Weeks -->
+    {% for week in weeks %}
+    <div class="grid grid-cols-7 border-b border-white/5 last:border-b-0">
+      {% for cell in week %} {% if cell %}
+      <a
+        href="{% url 'session_detail' cell.date|date:'Y-m-d' %}"
+        class="min-h-[90px] p-2 border-r border-white/3 last:border-r-0 transition-colors relative {% if cell.pnl is not None %}{% if cell.pnl > 0 %}bg-profit/10 hover:bg-profit/15 {% elif cell.pnl < 0 %}bg-loss/10 hover:bg-loss/15 {% else %}bg-neutral/10 hover:bg-neutral/15{% endif %}{% else %}hover:bg-white/3{% endif %} {% if cell.is_today %}ring-1 ring-accent ring-inset{% endif %}"
+      >
+        <!-- Day number -->
+        <span
+          class="text-xs font-medium {% if cell.is_today %}text-accent {% elif cell.date.weekday >= 5 %}text-slate-600 {% else %}text-slate-400{% endif %}"
+        >
+          {{ cell.date.day }}
+        </span>
+
+        <!-- P&L -->
+        {% if cell.pnl is not None %}
+        <p class="mt-1 text-xs font-semibold truncate {{ cell.pnl|pnl_color }}">
+          {{ cell.pnl|pnl_str:0 }}
+        </p>
+        {% endif %}
+
+        <!-- Trade count -->
+        {% if cell.trade_count %}
+        <p class="text-xs text-slate-600">
+          {{ cell.trade_count }} trade{{ cell.trade_count|pluralize }}
+        </p>
+        {% endif %}
+      </a>
+      {% else %}
+      <div
+        class="min-h-[90px] p-2 border-r border-white/3 last:border-r-0 bg-black/5"
+      ></div>
+      {% endif %} {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Monthly summary -->
+  <div
+    class="flex items-center justify-between px-4 py-3 bg-[#161b27] rounded-xl border border-white/5"
+  >
+    <span class="text-sm text-slate-400">Monthly Total</span>
+    <span class="text-base font-bold {{ month_pnl|pnl_color }}">
+      {{ month_pnl|pnl_str }}
+    </span>
+  </div>
+</div>
+{% endblock %}

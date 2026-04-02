@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}
+{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl">
+  <div class="bg-[#161b27] rounded-xl border border-white/5 p-6">
+    <form method="POST">
+      {% csrf_token %}
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Title *</label>
+          {{ form.title }}
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-xs text-slate-400 mb-1">Type</label>{{ form.entry_type }}</div>
+          <div><label class="block text-xs text-slate-400 mb-1">Tags</label>{{ form.tags_text }}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-xs text-slate-400 mb-1">Linked Trade</label>{{ form.trade }}</div>
+          <div><label class="block text-xs text-slate-400 mb-1">Linked Session</label>{{ form.session }}</div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Content (Markdown)</label>
+          {{ form.content }}
+        </div>
+      </div>
+      {% if form.errors %}<div class="text-loss text-sm mt-3">{{ form.errors }}</div>{% endif %}
+      <div class="flex justify-end gap-3 mt-6">
+        <a href="{% url 'journal_list' %}" class="px-4 py-2 text-sm border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg">Cancel</a>
+        <button type="submit" class="px-5 py-2 text-sm bg-accent hover:bg-blue-500 text-white font-medium rounded-lg">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+  const easyMDE = new EasyMDE({
+    element: document.getElementById('journal-editor'),
+    spellChecker: false, autosave: { enabled: true, uniqueId: 'journal-entry' },
+  });
+</script>
+{% endblock %}

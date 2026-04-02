@@ -1,0 +1,24 @@
+{% comment %}
+components/checklist_item.html Rendered standalone by HTMX toggle
+endpoint and inline by dashboard/session views. Variables: item (dict with id,
+label, category), checked (bool), session (TradingSession) {% endcomment %}
+<div class="flex items-center gap-2 py-1" id="checklist-item-{{ item.id }}">
+  <button
+    hx-post="{% url 'checklist_toggle' session.date|date:'Y-m-d' item.id %}"
+    hx-target="#checklist-item-{{ item.id }}"
+    hx-swap="outerHTML"
+    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+    class="flex-shrink-0 w-4 h-4 rounded border transition-colors {% if checked %}bg-accent border-accent{% else %}bg-transparent border-white/20 hover:border-accent{% endif %}"
+    title="Toggle"
+  >
+    {% if checked %}<span
+      class="block text-white text-center leading-none text-xs"
+      >✓</span
+    >{% endif %}
+  </button>
+  <span
+    class="text-sm {% if checked %}text-slate-500 line-through{% else %}text-slate-300{% endif %}"
+  >
+    {{ item.label }}
+  </span>
+</div>

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}
+{{ entry.title }}{% endblock %}
+{% block page_title %}{{ entry.title }}{% endblock %}
+{% block header_actions %}
+<a href="{% url 'journal_edit' entry.pk %}" class="px-3 py-1.5 text-xs border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg">Edit</a>
+{% endblock %}
+{% block content %}
+<div class="max-w-3xl space-y-4">
+  <div class="bg-[#161b27] rounded-xl border border-white/5 p-6">
+    <div class="flex gap-2 mb-4">
+      <span class="text-xs px-2 py-1 rounded bg-accent/10 text-accent">{{ entry.entry_type }}</span>
+      {% for tag in entry.tags %}<span class="text-xs px-1.5 py-0.5 rounded bg-white/5 text-slate-400">{{ tag }}</span>{% endfor %}
+      <span class="ml-auto text-xs text-slate-600">{{ entry.created_at|date:"N j, Y H:i" }}</span>
+    </div>
+    <div class="prose prose-invert prose-sm max-w-none text-slate-300">
+      {{ entry.content|linebreaks }}
+    </div>
+    {% if entry.trade %}<p class="mt-4 text-xs text-slate-500">Linked trade: <a href="{% url 'trade_detail' entry.trade.pk %}" class="text-accent hover:underline">{{ entry.trade }}</a></p>{% endif %}
+    {% if entry.session %}<p class="mt-1 text-xs text-slate-500">Session: <a href="{% url 'session_detail' entry.session.date|date:'Y-m-d' %}" class="text-accent hover:underline">{{ entry.session.date }}</a></p>{% endif %}
+  </div>
+  <form method="POST" action="{% url 'journal_delete' entry.pk %}">
+    {% csrf_token %}
+    <button class="text-xs text-loss hover:underline">Delete entry</button>
+  </form>
+</div>
+{% endblock %}

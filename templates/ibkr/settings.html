@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}
+IBKR Settings{% endblock %} {% block page_title %}IBKR Connection Settings{% endblock %} {% block content %}
+<div class="max-w-sm bg-[#161b27] rounded-xl border border-white/5 p-6">
+  <form method="POST" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-xs font-medium text-slate-400 mb-1">Host</label>
+      <input
+        type="text"
+        name="host"
+        value="{{ host }}"
+        class="w-full px-3 py-1.5 text-sm rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none font-mono"
+      />
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-400 mb-1">Port</label>
+      <input
+        type="number"
+        name="port"
+        value="{{ port }}"
+        class="w-full px-3 py-1.5 text-sm rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none font-mono"
+      />
+      <p class="mt-0.5 text-xs text-slate-600">
+        7497 = TWS paper, 7496 = TWS live, 4002 = Gateway paper
+      </p>
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-400 mb-1"
+        >Client ID</label
+      >
+      <input
+        type="number"
+        name="client_id"
+        value="{{ client_id }}"
+        class="w-full px-3 py-1.5 text-sm rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none font-mono"
+      />
+    </div>
+    <div class="flex gap-3 pt-2">
+      <a
+        href="{% url 'ibkr_status_page' %}"
+        class="px-4 py-2 text-sm border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
+        >Cancel</a
+      >
+      <button
+        type="submit"
+        class="px-4 py-2 text-sm bg-accent hover:bg-blue-600 text-white rounded-lg"
+      >
+        Save
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

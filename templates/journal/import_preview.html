@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}
+Import Preview{% endblock %} {% block page_title %}Import Preview{% endblock %} {% block content %}
+<div class="space-y-4">
+  <div
+    class="bg-[#161b27] rounded-xl border border-white/5 p-4 flex items-center justify-between"
+  >
+    <p class="text-sm text-slate-300">
+      {{ rows|length }} trade{{ rows|length|pluralize }} parsed
+    </p>
+    <div class="flex gap-3">
+      <a
+        href="{% url 'import_upload' %}"
+        class="px-3 py-1.5 text-xs border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
+        >Back</a
+      >
+      <form method="POST" action="{% url 'import_confirm' %}">
+        {% csrf_token %}
+        <input type="hidden" name="session_key" value="{{ session_key }}" />
+        <button
+          type="submit"
+          class="px-3 py-1.5 text-xs bg-accent hover:bg-blue-600 text-white rounded-lg"
+        >
+          Confirm Import
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs text-slate-300">
+      <thead>
+        <tr class="border-b border-white/5 text-slate-500">
+          <th class="pb-2 text-left">Date</th>
+          <th class="pb-2 text-left">Symbol</th>
+          <th class="pb-2 text-right">Type</th>
+          <th class="pb-2 text-right">Strike</th>
+          <th class="pb-2 text-right">Expiry</th>
+          <th class="pb-2 text-right">Qty</th>
+          <th class="pb-2 text-right">Entry</th>
+          <th class="pb-2 text-right">Exit</th>
+          <th class="pb-2 text-right">P&amp;L</th>
+          <th class="pb-2 text-right">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+        {% for row in rows %}
+        <tr class="hover:bg-white/3">
+          <td class="py-1.5">{{ row.trade_date|default:"-" }}</td>
+          <td class="py-1.5 font-mono">{{ row.symbol|default:"SPX" }}</td>
+          <td class="py-1.5 text-right">{{ row.option_type|default:"-" }}</td>
+          <td class="py-1.5 text-right font-mono">
+            {{ row.strike_price|default:"-" }}
+          </td>
+          <td class="py-1.5 text-right font-mono">
+            {{ row.expiration_date|default:"-" }}
+          </td>
+          <td class="py-1.5 text-right font-mono">
+            {{ row.quantity|default:"-" }}
+          </td>
+          <td class="py-1.5 text-right font-mono">
+            {{ row.entry_price|default:"-" }}
+          </td>
+          <td class="py-1.5 text-right font-mono">
+            {{ row.exit_price|default:"-" }}
+          </td>
+          <td
+            class="py-1.5 text-right font-mono {% if row.pnl|default:0 > 0 %}text-profit{% elif row.pnl|default:0 < 0 %}text-loss{% endif %}"
+          >
+            {% if row.pnl %}${{ row.pnl|floatformat:2 }}{% else %}-{% endif %}
+          </td>
+          <td class="py-1.5 text-right">{{ row.status|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

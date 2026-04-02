@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}
+Import Trades{% endblock %} {% block page_title %}Import Trades{% endblock %} {% block content %}
+<div class="max-w-md bg-[#161b27] rounded-xl border border-white/5 p-6">
+  <p class="text-xs text-slate-500 mb-4">
+    Upload an IBKR Activity Statement CSV to import trades. The parser will
+    detect the Trades section automatically.
+  </p>
+  <form method="POST" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-xs font-medium text-slate-400 mb-1"
+        >Activity Statement CSV</label
+      >
+      <input
+        type="file"
+        name="csv_file"
+        accept=".csv"
+        class="w-full text-sm text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-accent file:text-white hover:file:bg-blue-600 cursor-pointer"
+      />
+    </div>
+    <div class="flex gap-3">
+      <a
+        href="{% url 'settings_index' %}"
+        class="px-4 py-2 text-sm border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
+        >Cancel</a
+      >
+      <button
+        type="submit"
+        class="px-4 py-2 text-sm bg-accent hover:bg-blue-600 text-white rounded-lg"
+      >
+        Parse CSV
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}
+SPX Option Chain{% endblock %} {% block page_title %}SPX Option Chain{% endblock %} {% block content %}
+<div x-data="{expiry: '{{ expiry }}'}" class="space-y-4">
+  <form method="GET" class="flex gap-2 items-center">
+    <input
+      type="date"
+      name="expiry"
+      x-model="expiry"
+      class="px-3 py-1.5 text-sm rounded-lg bg-[#161b27] border border-white/10 text-slate-200 focus:border-accent focus:outline-none"
+    />
+    <button
+      type="submit"
+      class="px-4 py-1.5 text-sm bg-accent hover:bg-blue-600 text-white rounded-lg"
+    >
+      Load Chain
+    </button>
+    <a
+      href="{% url 'ibkr_status_page' %}"
+      class="ml-auto text-xs text-slate-500 hover:text-white"
+      >← Back</a
+    >
+  </form>
+
+  {% if chain %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs text-slate-300">
+      <thead>
+        <tr class="border-b border-white/5 text-slate-500">
+          <th class="pb-2 text-left">Strike</th>
+          <th class="pb-2 text-right">Type</th>
+          <th class="pb-2 text-right">Bid</th>
+          <th class="pb-2 text-right">Ask</th>
+          <th class="pb-2 text-right">IV%</th>
+          <th class="pb-2 text-right">Delta</th>
+          <th class="pb-2 text-right">Theta</th>
+          <th class="pb-2 text-right">Vega</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+        {% for row in chain %}
+        <tr class="hover:bg-white/3 transition-colors">
+          <td class="py-1.5 font-mono">{{ row.strike }}</td>
+          <td
+            class="py-1.5 text-right {% if row.right == 'C' %}text-profit{% else %}text-loss{% endif %}"
+          >
+            {{ row.right }}
+          </td>
+          <td class="py-1.5 text-right font-mono">{{ row.bid }}</td>
+          <td class="py-1.5 text-right font-mono">{{ row.ask }}</td>
+          <td class="py-1.5 text-right font-mono">
+            {{ row.iv|floatformat:1 }}
+          </td>
+          <td class="py-1.5 text-right font-mono">
+            {{ row.delta|floatformat:3 }}
+          </td>
+          <td class="py-1.5 text-right font-mono text-loss">
+            {{ row.theta|floatformat:3 }}
+          </td>
+          <td class="py-1.5 text-right font-mono">
+            {{ row.vega|floatformat:3 }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% elif expiry %}
+  <div
+    class="bg-[#161b27] rounded-xl border border-white/5 p-8 text-center text-slate-500"
+  >
+    {% if connected %}No data returned for {{ expiry }}.{% else %}TWS not
+    connected.{% endif %}
+  </div>
+  {% else %}
+  <div
+    class="bg-[#161b27] rounded-xl border border-white/5 p-8 text-center text-slate-500"
+  >
+    Select an expiry date to load the SPX chain.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

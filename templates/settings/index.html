@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}
+Settings{% endblock %} {% block page_title %}Settings{% endblock %} {% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+  <a
+    href="{% url 'settings_checklist' %}"
+    class="bg-[#161b27] rounded-xl border border-white/5 p-5 hover:border-accent/30 transition-colors group"
+  >
+    <div class="text-lg mb-1 text-accent">☑</div>
+    <p class="text-sm font-medium text-slate-200">Pre-Trade Checklist</p>
+    <p class="text-xs text-slate-500 mt-1">
+      Manage checklist templates and default items
+    </p>
+  </a>
+  <a
+    href="{% url 'goals' %}"
+    class="bg-[#161b27] rounded-xl border border-white/5 p-5 hover:border-accent/30 transition-colors group"
+  >
+    <div class="text-lg mb-1 text-accent">🎯</div>
+    <p class="text-sm font-medium text-slate-200">Performance Goals</p>
+    <p class="text-xs text-slate-500 mt-1">
+      Set win-rate, P&amp;L, and streak targets
+    </p>
+  </a>
+  <a
+    href="{% url 'ibkr_settings' %}"
+    class="bg-[#161b27] rounded-xl border border-white/5 p-5 hover:border-accent/30 transition-colors group"
+  >
+    <div class="text-lg mb-1 text-accent">🔌</div>
+    <p class="text-sm font-medium text-slate-200">IBKR Connection</p>
+    <p class="text-xs text-slate-500 mt-1">TWS host / port / client ID</p>
+  </a>
+  <a
+    href="{% url 'import_upload' %}"
+    class="bg-[#161b27] rounded-xl border border-white/5 p-5 hover:border-accent/30 transition-colors group"
+  >
+    <div class="text-lg mb-1 text-accent">📥</div>
+    <p class="text-sm font-medium text-slate-200">Import Trades</p>
+    <p class="text-xs text-slate-500 mt-1">
+      Upload IBKR Activity Statement CSV
+    </p>
+  </a>
+</div>
+{% endblock %}

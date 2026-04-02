@@ -1,0 +1,128 @@
+{% comment %}
+components/trade_quick_add.html HTMX modal for quick trade entry
+from the topbar "+ Trade" button. {% endcomment %} {% load journal_extras %}
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+  x-data="tradeRR()"
+  id="quick-add-modal"
+  @keydown.escape.window="document.getElementById('modal-container').innerHTML=''"
+>
+  <div
+    class="bg-[#161b27] rounded-2xl border border-white/10 w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+  >
+    <div
+      class="flex items-center justify-between px-6 py-4 border-b border-white/5"
+    >
+      <h2 class="text-base font-semibold text-slate-200">Quick Add Trade</h2>
+      <button
+        @click="document.getElementById('modal-container').innerHTML=''"
+        class="text-slate-500 hover:text-slate-300 text-xl leading-none"
+      >
+        ×
+      </button>
+    </div>
+
+    <form
+      method="POST"
+      hx-post="{% url 'trade_quick_add' %}"
+      hx-target="#modal-container"
+      hx-swap="innerHTML"
+      class="p-6 space-y-4"
+    >
+      {% csrf_token %}
+
+      <div class="grid grid-cols-2 gap-4">
+        {{ form.trade_date.label_tag }} {{ form.trade_date }} {{ form.symbol.label_tag }} {{ form.symbol }}
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div>{{ form.option_type.label_tag }}{{ form.option_type }}</div>
+        <div>{{ form.trade_type.label_tag }}{{ form.trade_type }}</div>
+        <div>{{ form.status.label_tag }}{{ form.status }}</div>
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div>{{ form.strike.label_tag }}{{ form.strike }}</div>
+        <div>{{ form.expiry.label_tag }}{{ form.expiry }}</div>
+        <div>{{ form.quantity.label_tag }}{{ form.quantity }}</div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Entry Price</label>
+          {{ form.entry_price }}
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Exit Price</label>
+          {{ form.exit_price }}
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>{{ form.entry_time.label_tag }}{{ form.entry_time }}</div>
+        <div>{{ form.exit_time.label_tag }}{{ form.exit_time }}</div>
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Stop Loss</label>
+          {{ form.planned_stop_loss }}
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">TP1</label>
+          {{ form.planned_take_profit_1 }}
+        </div>
+        <div class="flex flex-col justify-end">
+          <!-- Live R:R display -->
+          <div class="px-3 py-2 bg-white/3 rounded-lg text-sm">
+            R:R =
+            <span class="font-semibold text-accent" x-text="rrDisplay"></span>
+          </div>
+        </div>
+      </div>
+      <div>
+        {{ form.strategy_tags_text.label_tag }}{{ form.strategy_tags_text }}
+      </div>
+      <div>{{ form.trade_notes.label_tag }}{{ form.trade_notes }}</div>
+
+      {% if form.errors %}
+      <div class="text-loss text-sm">
+        {% for field, errors in form.errors.items %} {% for error in errors %}
+        <p>{{ field }}: {{ error }}</p>
+        {% endfor %} {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button
+          type="button"
+          @click="document.getElementById('modal-container').innerHTML=''"
+          class="px-4 py-2 text-sm rounded-lg border border-white/10 text-slate-400 hover:bg-white/5"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 text-sm rounded-lg bg-accent hover:bg-blue-500 text-white font-medium"
+        >
+          Save Trade
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function tradeRR() {
+    return {
+      entryPrice: 0,
+      tp1: 0,
+      stopLoss: 0,
+      get rrDisplay() {
+        const ep = parseFloat(this.entryPrice) || 0;
+        const tp = parseFloat(this.tp1) || 0;
+        const sl = parseFloat(this.stopLoss) || 0;
+        if (ep <= 0 || tp <= ep) return "—";
+        const reward = tp - ep;
+        const risk = (sl > 0 && sl < ep) ? (ep - sl) : ep;
+        if (risk <= 0) return "—";
+        return parseFloat((reward / risk).toFixed(2)) + ":1";
+      },
+    };
+  }
+</script>

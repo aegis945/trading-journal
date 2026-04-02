@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Trading Journal{% endblock %} — SPX 0DTE</title>
+
+    <!-- Tailwind CSS (CDN play script — no build step) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "bg-base": "#0f1117",
+              "bg-card": "#161b27",
+              "bg-sidebar": "#0d1321",
+              accent: "#3b82f6",
+              profit: "#22c55e",
+              loss: "#ef4444",
+              neutral: "#eab308",
+              "border-dim": "rgba(255,255,255,0.08)",
+            },
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- HTMX -->
+    <script
+      src="https://unpkg.com/htmx.org@2.0.4"
+      integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Alpine.js -->
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
+    <!-- Chart.js (used on analytics pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+    <!-- EasyMDE (Markdown editor, used on journal pages) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* Scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f1117;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #2a3547;
+        border-radius: 3px;
+      }
+
+      /* HTMX loading indicator */
+      .htmx-indicator {
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .htmx-request .htmx-indicator {
+        opacity: 1;
+      }
+      .htmx-request.htmx-indicator {
+        opacity: 1;
+      }
+
+      /* Remove EasyMDE default white background */
+      .EasyMDEContainer .CodeMirror {
+        background: #161b27 !important;
+        color: #e2e8f0 !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+      .EasyMDEContainer .editor-toolbar {
+        background: #1e263a !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+      .EasyMDEContainer .editor-toolbar a {
+        color: #94a3b8 !important;
+      }
+      .EasyMDEContainer .editor-toolbar a:hover,
+      .EasyMDEContainer .editor-toolbar a.active {
+        color: #3b82f6 !important;
+        background: rgba(59, 130, 246, 0.1) !important;
+      }
+      .EasyMDEContainer .editor-preview {
+        background: #161b27 !important;
+        color: #e2e8f0 !important;
+      }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body
+    class="h-full bg-[#0f1117] text-slate-200 font-sans antialiased"
+    style="background-color: #0f1117"
+    x-data="{ sidebarOpen: true }"
+  >
+    <div class="flex h-screen overflow-hidden">
+      <!-- ================================================================
+         SIDEBAR
+    ================================================================ -->
+      <aside
+        class="flex flex-col flex-shrink-0 bg-[#0d1321] border-r border-white/5 transition-all duration-200"
+        :class="sidebarOpen ? 'w-56' : 'w-14'"
+      >
+        <!-- Logo / App name -->
+        <div class="flex items-center h-14 px-4 border-b border-white/5">
+          <span
+            class="text-accent font-bold text-lg tracking-tight truncate"
+            :class="sidebarOpen ? 'block' : 'hidden'"
+            >SPX Journal</span
+          >
+          <span
+            class="text-accent font-bold text-lg"
+            :class="sidebarOpen ? 'hidden' : 'block'"
+            >SJ</span
+          >
+        </div>
+
+        <!-- Nav items -->
+        <nav class="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
+          {% url 'dashboard' as url_dashboard %} {% url 'trade_list' as url_trades %} {% url 'session_list' as url_sessions %} {% url 'calendar' as url_calendar %} {% url 'analytics' as url_analytics %}
+          {% url 'journal_list' as url_journal %} {% url 'goals' as url_goals %}
+          {% url 'ibkr_status_page' as url_ibkr %} {% url 'import_upload' as url_import %} {% url 'settings_index' as url_settings %} {% with request.path as path %} {% include "components/nav_item.html" with href=url_dashboard icon="⬛" label="Dashboard" %} {% include "components/nav_item.html" with href=url_trades icon="📋" label="Trade Log" %} {% include "components/nav_item.html" with href=url_sessions icon="📅" label="Sessions" %} {% include "components/nav_item.html" with href=url_calendar icon="🗓️" label="Calendar" %} {% include "components/nav_item.html" with href=url_analytics icon="📊" label="Analytics" %} {% include "components/nav_item.html" with href=url_journal icon="📝" label="Journal" %} {% include "components/nav_item.html" with href=url_goals icon="🎯" label="Goals" %}
+          <div class="pt-2 mt-2 border-t border-white/5"></div>
+          {% include "components/nav_item.html" with href=url_ibkr icon="🔌" label="IBKR TWS" %} {% include "components/nav_item.html" with href=url_import icon="⬆️" label="Import CSV" %} {% include "components/nav_item.html" with href=url_settings icon="⚙️" label="Settings" %} {% endwith %}
+        </nav>
+
+        <!-- TWS status indicator -->
+        <div
+          class="px-4 py-3 border-t border-white/5 flex items-center gap-2"
+          hx-get="{% url 'ibkr_status' %}"
+          hx-trigger="load, every 10s"
+          hx-swap="outerHTML"
+        >
+          <span
+            class="inline-block w-2 h-2 rounded-full bg-slate-500 animate-pulse"
+          ></span>
+          <span
+            class="text-xs text-slate-500 truncate"
+            :class="sidebarOpen ? 'block' : 'hidden'"
+            >Connecting…</span
+          >
+        </div>
+
+        <!-- Collapse toggle -->
+        <button
+          @click="sidebarOpen = !sidebarOpen"
+          class="flex items-center justify-center h-10 border-t border-white/5 text-slate-500 hover:text-slate-300 transition-colors text-xs"
+        >
+          <span x-text="sidebarOpen ? '◀ Collapse' : '▶'"></span>
+        </button>
+      </aside>
+
+      <!-- ================================================================
+         MAIN CONTENT
+    ================================================================ -->
+      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <!-- Top bar -->
+        <header
+          class="flex items-center justify-between h-14 px-6 border-b border-white/5 bg-[#0f1117] flex-shrink-0"
+        >
+          <div class="flex items-center gap-3">
+            <h1 class="text-sm font-semibold text-slate-200">
+              {% block page_title %}{% endblock %}
+            </h1>
+            {% block breadcrumb %}{% endblock %}
+          </div>
+          <div class="flex items-center gap-3">
+            <!-- Quick-add trade button -->
+            <button
+              hx-get="{% url 'trade_quick_add' %}"
+              hx-target="#modal-container"
+              hx-swap="innerHTML"
+              class="px-3 py-1.5 text-xs font-medium bg-accent hover:bg-blue-500 text-white rounded-lg transition-colors"
+            >
+              + Trade
+            </button>
+            {% block header_actions %}{% endblock %}
+          </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 overflow-y-auto p-6">
+          <!-- Flash messages -->
+          {% if messages %}
+          <div class="mb-4 space-y-2">
+            {% for message in messages %}
+            <div
+              class="px-4 py-3 rounded-lg text-sm font-medium {% if message.tags == 'error' %}bg-loss/20 text-red-300 border border-loss/30 {% elif message.tags == 'success' %}bg-profit/20 text-green-300 border border-profit/30 {% else %}bg-accent/20 text-blue-300 border border-accent/30{% endif %}"
+            >
+              {{ message }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% block content %}{% endblock %}
+        </main>
+      </div>
+    </div>
+
+    <!-- Modal container (HTMX appends modals here) -->
+    <div id="modal-container"></div>
+
+    <!-- Live checklist progress update -->
+    <script>
+      document.body.addEventListener('htmx:afterSwap', function (evt) {
+        var bar = document.getElementById('checklist-bar');
+        var pct = document.getElementById('checklist-pct');
+        var list = document.getElementById('checklist-item-list');
+        if (!bar || !pct || !list) return;
+        var total = list.querySelectorAll('button[hx-post]').length;
+        var checked = list.querySelectorAll('button.bg-accent').length;
+        var percent = total > 0 ? Math.round(checked / total * 100) : 0;
+        bar.style.width = percent + '%';
+        pct.textContent = percent + '%';
+      });
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+  </body>
+</html>

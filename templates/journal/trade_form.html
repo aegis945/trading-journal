@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% load journal_extras %}
+{% block title %}
+{{ title }}{% endblock %} {% block page_title %}{{ title }}{% endblock %} {% block content %}
+<div class="max-w-3xl" x-data="tradeForm()">
+  <div class="bg-[#161b27] rounded-xl border border-white/5 p-6">
+    <form method="POST">
+      {% csrf_token %}
+
+      <!-- Section: Basic -->
+      <div class="mb-6">
+        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
+          Trade Info
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"
+              >Session Date *</label
+            >
+            {{ form.trade_date }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Symbol *</label>
+            {{ form.symbol }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"
+              >Option Type *</label
+            >
+            {{ form.option_type }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"
+              >Trade Type *</label
+            >
+            {{ form.trade_type }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Strike *</label>
+            {{ form.strike }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Expiry *</label>
+            {{ form.expiry }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Quantity *</label>
+            {{ form.quantity }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Status</label>
+            {{ form.status }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Pricing -->
+      <div class="mb-6">
+        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
+          Entry / Exit
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"
+              >Entry Price * <span class="text-slate-600">(per share)</span></label
+            >
+            <input
+              type="number"
+              name="entry_price"
+              x-model="entryPrice"
+              value="{{ form.entry_price.value|default:'' }}"
+              step="0.01"
+              placeholder="5.50"
+              class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+            />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Exit Price <span class="text-slate-600">(per share)</span></label>
+            <input
+              type="number"
+              name="exit_price"
+              x-model="exitPrice"
+              value="{{ form.exit_price.value|default:'' }}"
+              step="0.01"
+              placeholder="8.00"
+              class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+            />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"
+              >Entry Time *</label
+            >
+            {{ form.entry_time }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Exit Time</label>
+            {{ form.exit_time }}
+          </div>
+        </div>
+
+        <!-- Live P&L preview -->
+        <div
+          class="mt-3 px-4 py-3 bg-white/3 rounded-lg flex items-center gap-6 text-sm"
+        >
+          <span class="text-slate-500">Est. P&L:</span>
+          <span
+            class="font-semibold"
+            :class="pnl >= 0 ? 'text-profit' : 'text-loss'"
+            x-text="pnl !== null ? (pnl >= 0 ? '+' : '-') + '$' + Math.abs(pnl).toFixed(2) : '—'"
+          ></span>
+          <span class="text-slate-500 ml-4">R:R:</span>
+          <span
+            class="font-semibold text-accent"
+            x-text="rr !== null ? parseFloat(rr.toFixed(2)) + ':1' : '—'"
+          ></span>
+        </div>
+      </div>
+
+      <!-- Section: Greeks -->
+      <div class="mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs text-slate-500 uppercase tracking-wider">
+            Greeks at Entry
+          </h3>
+          <button
+            type="button"
+            hx-get="{% url 'ibkr_greeks' %}"
+            hx-include="[name='symbol'],[name='expiry'],[name='strike'],[name='option_type']"
+            hx-on::after-request="fillGreeks(event)"
+            class="text-xs px-2 py-1 border border-accent/30 text-accent hover:bg-accent/10 rounded transition-colors"
+            id="fetch-greeks-btn"
+          >
+            Fetch from TWS
+          </button>
+        </div>
+        <div class="grid grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Delta</label>
+            {{ form.delta_entry }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Theta</label>
+            {{ form.theta_entry }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Vega</label>
+            {{ form.vega_entry }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">IV</label>
+            {{ form.iv_entry }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Risk -->
+      <div class="mb-6">
+        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
+          Risk Management
+        </h3>
+        <div class="grid grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Stop Loss <span class="text-slate-600">(per share)</span></label>
+            <input
+              type="number"
+              name="planned_stop_loss"
+              x-model="stopLoss"
+              value="{{ form.planned_stop_loss.value|default:'' }}"
+              step="0.01"
+              class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent"
+            />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">TP 1</label>
+            <input
+              type="number"
+              name="planned_take_profit_1"
+              x-model="tp1"
+              value="{{ form.planned_take_profit_1.value|default:'' }}"
+              step="0.01"
+              class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent"
+            />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">TP 2</label>
+            {{ form.planned_take_profit_2 }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">TP 3</label>
+            {{ form.planned_take_profit_3 }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Notes & Tags -->
+      <div class="mb-6">
+        <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
+          Notes & Classification
+        </h3>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"
+              >Strategy Tags</label
+            >
+            {{ form.strategy_tags_text }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"
+              >Setup Quality (1–5)</label
+            >
+            {{ form.setup_quality }}
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs text-slate-400 mb-1"
+            >Trade Notes (rationale)</label
+          >
+          {{ form.trade_notes }}
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Exit Notes</label>
+          {{ form.exit_notes }}
+        </div>
+      </div>
+
+      {% if form.errors %}
+      <div
+        class="mb-4 p-3 bg-loss/10 border border-loss/20 rounded-lg text-loss text-sm"
+      >
+        {% for field, errors in form.errors.items %} {% for err in errors %}
+        <p>{{ field }}: {{ err }}</p>
+        {% endfor %} {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="flex justify-end gap-3">
+        <a
+          href="{% url 'trade_list' %}"
+          class="px-4 py-2 text-sm rounded-lg border border-white/10 text-slate-400 hover:bg-white/5"
+        >
+          Cancel
+        </a>
+        <button
+          type="submit"
+          class="px-5 py-2 text-sm bg-accent hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
+        >
+          Save Trade
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function tradeForm() {
+    return {
+      entryPrice: {{ form.entry_price.value|default:'0' }},
+      exitPrice:  {{ form.exit_price.value|default:'null' }},
+      stopLoss:   {{ form.planned_stop_loss.value|default:'null' }},
+      tp1:        {{ form.planned_take_profit_1.value|default:'null' }},
+      qty:        {% if form.quantity.value %}{{ form.quantity.value }}{% else %}1{% endif %},
+
+      get pnl() {
+        const ep = parseFloat(this.entryPrice) || 0;
+        const xp = parseFloat(this.exitPrice);
+        if (!xp || ep === 0) return null;
+        return (xp - ep) * this.qty * 100;
+      },
+
+      get rr() {
+        const ep = parseFloat(this.entryPrice) || 0;
+        const tp = parseFloat(this.tp1);
+        if (!tp || ep === 0 || tp <= ep) return null;
+        const reward = (tp - ep) * this.qty * 100;
+        const sl = parseFloat(this.stopLoss);
+        const risk = (sl && sl < ep)
+          ? (ep - sl) * this.qty * 100
+          : ep * this.qty * 100;
+        if (risk <= 0) return null;
+        return reward / risk;
+      },
+    }
+  }
+
+  function fillGreeks(evt) {
+    try {
+      const data = JSON.parse(evt.detail.xhr.responseText);
+      if (data.delta !== null && data.delta !== undefined)
+        document.querySelector('[name=delta_entry]').value = data.delta.toFixed(4);
+      if (data.theta !== null && data.theta !== undefined)
+        document.querySelector('[name=theta_entry]').value = data.theta.toFixed(4);
+      if (data.vega !== null && data.vega !== undefined)
+        document.querySelector('[name=vega_entry]').value = data.vega.toFixed(4);
+      if (data.iv !== null && data.iv !== undefined)
+        document.querySelector('[name=iv_entry]').value = data.iv.toFixed(4);
+    } catch(e) {}
+  }
+</script>
+{% endblock %}

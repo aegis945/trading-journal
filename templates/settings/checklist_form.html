@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}
+{{ title }}{% endblock %} {% block page_title %}{{ title }}{% endblock %} {% block content %}
+<div class="max-w-lg bg-[#161b27] rounded-xl border border-white/5 p-6">
+  <form method="POST" class="space-y-4">
+    {% csrf_token %} {% for field in form %}
+    <div>
+      <label class="block text-xs font-medium text-slate-400 mb-1"
+        >{{ field.label }}</label
+      >
+      {{ field }} {% if field.help_text %}
+      <p class="mt-0.5 text-xs text-slate-600">{{ field.help_text }}</p>
+      {% endif %} {% if field.errors %}
+      <p class="mt-1 text-xs text-loss">{{ field.errors|join:", " }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <p class="text-xs text-slate-500">
+      Items JSON format:
+      <code class="text-slate-400"
+        >[{"category":"Risk Check","text":"Max 1 contract","required":true},
+        ...]</code
+      >
+    </p>
+    <div class="flex gap-3 pt-2">
+      <a
+        href="{% url 'settings_checklist' %}"
+        class="px-4 py-2 text-sm border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
+        >Cancel</a
+      >
+      <button
+        type="submit"
+        class="px-4 py-2 text-sm bg-accent hover:bg-blue-600 text-white rounded-lg"
+      >
+        Save Template
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

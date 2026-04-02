@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load journal_extras %}
+{% block title %}
+Trade Log{% endblock %} {% block page_title %}Trade Log{% endblock %} {% block header_actions %}
+<a
+  href="{% url 'trade_add' %}"
+  class="px-3 py-1.5 text-xs font-medium border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg transition-colors"
+>
+  Add Manual Trade
+</a>
+<a
+  href="{% url 'import_upload' %}"
+  class="px-3 py-1.5 text-xs font-medium border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg transition-colors"
+>
+  Import CSV
+</a>
+<a
+  href="{% url 'trade_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+  class="px-3 py-1.5 text-xs font-medium border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg transition-colors"
+>
+  Export
+</a>
+{% endblock %} {% block content %}
+<div class="space-y-4">
+  <!-- Filters -->
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">From</label>
+      <input
+        type="date"
+        name="date_from"
+        value="{{ filters.date_from }}"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-accent"
+      />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">To</label>
+      <input
+        type="date"
+        name="date_to"
+        value="{{ filters.date_to }}"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-accent"
+      />
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Type</label>
+      <select
+        name="option_type"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-accent"
+      >
+        <option value="">All</option>
+        {% for val, label in option_type_choices %}
+        <option
+          value="{{ val }}"
+          {% if filters.option_type == val %}selected{% endif %}
+        >
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Trade Type</label>
+      <select
+        name="trade_type"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-accent"
+      >
+        <option value="">All</option>
+        {% for val, label in trade_type_choices %}
+        <option
+          value="{{ val }}"
+          {% if filters.trade_type == val %}selected{% endif %}
+        >
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Status</label>
+      <select
+        name="status"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-accent"
+      >
+        <option value="">All</option>
+        {% for val, label in status_choices %}
+        <option
+          value="{{ val }}"
+          {% if filters.status == val %}selected{% endif %}
+        >
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Tag</label>
+      <input
+        type="text"
+        name="tag"
+        value="{{ filters.tag }}"
+        placeholder="momentum…"
+        class="bg-[#1e263a] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-accent"
+      />
+    </div>
+    <button
+      type="submit"
+      class="px-4 py-1.5 text-sm bg-accent hover:bg-blue-500 text-white rounded-lg transition-colors"
+    >
+      Filter
+    </button>
+    <a
+      href="{% url 'trade_list' %}"
+      class="px-4 py-1.5 text-sm text-slate-400 hover:text-slate-200"
+      >Clear</a
+    >
+  </form>
+
+  <!-- Table -->
+  <div class="bg-[#161b27] rounded-xl border border-white/5 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr
+          class="border-b border-white/5 text-xs text-slate-500 uppercase tracking-wider"
+        >
+          <th class="px-4 py-3 text-left">Date</th>
+          <th class="px-4 py-3 text-left">Symbol</th>
+          <th class="px-4 py-3 text-left">Type</th>
+          <th class="px-4 py-3 text-right">Strike</th>
+          <th class="px-4 py-3 text-right">Qty</th>
+          <th class="px-4 py-3 text-right">Entry</th>
+          <th class="px-4 py-3 text-right">Exit</th>
+          <th class="px-4 py-3 text-right">P&L</th>
+          <th class="px-4 py-3 text-right">R:R</th>
+          <th class="px-4 py-3 text-center">Status</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/3">
+        {% for trade in trades %}
+        <tr
+          class="hover:bg-white/2 transition-colors {% if trade.status == 'OPEN' %} {% elif trade.pnl %}{% if trade.pnl > 0 %}bg-profit/3{% else %}bg-loss/3{% endif %} {% endif %}"
+        >
+          <td class="px-4 py-3 text-slate-300">{{ trade.trade_date }}</td>
+          <td class="px-4 py-3 font-medium text-slate-200">
+            {{ trade.symbol }}
+          </td>
+          <td class="px-4 py-3">
+            <span class="text-xs">{{ trade.option_type }}</span>
+            <span class="text-xs text-slate-500 ml-1"
+              >{{ trade.get_trade_type_display }}</span
+            >
+          </td>
+          <td class="px-4 py-3 text-right text-slate-300">
+            {{ trade.strike }}
+          </td>
+          <td class="px-4 py-3 text-right text-slate-300">
+            {{ trade.quantity }}
+          </td>
+          <td class="px-4 py-3 text-right text-slate-300">
+            ${{ trade.entry_price|floatformat:2 }}
+          </td>
+          <td class="px-4 py-3 text-right text-slate-400">
+            {% if trade.exit_price %}${{ trade.exit_price|floatformat:2 }}{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right font-semibold">
+            {% if trade.pnl is not None %}
+            <span class="{{ trade.pnl|pnl_color }}">
+              {{ trade.pnl|pnl_str }}
+            </span>
+            {% else %}<span class="text-slate-600">—</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right text-slate-400">
+            {% if trade.risk_reward_ratio %}{{ trade.risk_reward_ratio|rr_str }}:1{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span
+              class="text-xs px-2 py-0.5 rounded-full {% if trade.status == 'OPEN' %}bg-neutral/15 text-neutral {% elif trade.status == 'CLOSED' %}bg-profit/10 text-profit {% else %}bg-slate-700 text-slate-400{% endif %}"
+            >
+              {{ trade.status }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <a
+              href="{% url 'trade_detail' trade.pk %}"
+              class="text-xs text-accent hover:underline"
+              >View</a
+            >
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="11" class="px-4 py-12 text-center text-slate-600">
+            No trades found.
+            <a
+              href="{% url 'trade_add' %}"
+              class="text-accent hover:underline ml-1"
+              >Add one →</a
+            >
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs text-slate-600">
+    {{ trades|length }} trade{{ trades|length|pluralize }} shown
+  </p>
+</div>
+{% endblock %}

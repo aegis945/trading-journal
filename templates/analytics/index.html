@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% load journal_extras %}
+{% block title %}
+Analytics{% endblock %} {% block page_title %}Analytics{% endblock %} {% block content %}
+<div class="space-y-6">
+  <!-- Period filter -->
+  <div class="flex gap-2">
+    {% for kv in periods %}
+    <a
+      href="?days={{ kv.1 }}"
+      class="px-3 py-1.5 text-xs rounded-lg border transition-colors {% if request.GET.days == kv.1 or not request.GET.days and kv.0 == '30d' %}border-accent text-accent bg-accent/10{% else %}border-white/10 text-slate-400 hover:bg-white/5{% endif %}"
+    >
+      {{ kv.0 }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Row 1: Win Rate by Tag + P&L by Day of Week -->
+  <div class="grid grid-cols-2 gap-6">
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <h3 class="text-sm font-semibold text-slate-200 mb-4">
+        Win Rate by Strategy Tag
+      </h3>
+      <canvas id="winRateByTag" height="200"></canvas>
+    </div>
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <h3 class="text-sm font-semibold text-slate-200 mb-4">
+        P&L by Day of Week
+      </h3>
+      <canvas id="pnlByWeekday" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 2: Psych + Delta -->
+  <div class="grid grid-cols-2 gap-6">
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <h3 class="text-sm font-semibold text-slate-200 mb-4">
+        Psychological State vs Outcome
+      </h3>
+      <canvas id="psychVsOutcome" height="200"></canvas>
+    </div>
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <h3 class="text-sm font-semibold text-slate-200 mb-4">
+        Delta at Entry vs P&L
+      </h3>
+      <canvas id="deltaVsPnl" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 3: Drawdown + Setup Quality -->
+  <div class="grid grid-cols-2 gap-6">
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <h3 class="text-sm font-semibold text-slate-200 mb-4">
+        Cumulative P&L & Drawdown
+      </h3>
+      <canvas id="drawdown" height="200"></canvas>
+    </div>
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <h3 class="text-sm font-semibold text-slate-200 mb-4">
+        Setup Quality vs Outcome
+      </h3>
+      <canvas id="setupQuality" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 4: Trade Duration + Monthly Table -->
+  <div class="grid grid-cols-2 gap-6">
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <h3 class="text-sm font-semibold text-slate-200 mb-4">
+        Trade Duration vs P&L
+      </h3>
+      <canvas id="durationVsPnl" height="200"></canvas>
+    </div>
+    <div
+      class="bg-[#161b27] rounded-xl border border-white/5 p-5 overflow-auto"
+    >
+      <h3 class="text-sm font-semibold text-slate-200 mb-4">
+        Monthly Performance
+      </h3>
+      <table class="w-full text-xs" id="monthly-table">
+        <thead>
+          <tr
+            class="border-b border-white/5 text-slate-500 uppercase tracking-wider"
+          >
+            <th class="py-2 text-left">Month</th>
+            <th class="py-2 text-right">Trades</th>
+            <th class="py-2 text-right">Win %</th>
+            <th class="py-2 text-right">P&L</th>
+            <th class="py-2 text-right">Avg R:R</th>
+          </tr>
+        </thead>
+        <tbody id="monthly-table-body" class="divide-y divide-white/3">
+          <tr>
+            <td colspan="5" class="py-6 text-center text-slate-600">
+              Loading…
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_scripts %}
+<script>
+  const qs = window.location.search;
+  const CHART_DEFAULTS = {
+    color: "#94a3b8",
+    plugins: {
+      legend: { labels: { color: "#94a3b8", font: { size: 11 } } },
+    },
+    scales: {
+      x: {
+        ticks: { color: "#64748b" },
+        grid: { color: "rgba(255,255,255,0.04)" },
+      },
+      y: {
+        ticks: { color: "#64748b" },
+        grid: { color: "rgba(255,255,255,0.04)" },
+      },
+    },
+  };
+
+  async function fetchData(url) {
+    const r = await fetch(url + qs);
+    return r.json();
+  }
+
+  // 1. Win Rate by Tag
+  fetchData("/analytics/data/win-rate-by-tag/").then((d) => {
+    new Chart(document.getElementById("winRateByTag"), {
+      type: "bar",
+      data: {
+        labels: d.labels,
+        datasets: [
+          {
+            label: "Win Rate (%)",
+            data: d.win_rates,
+            backgroundColor: "#3b82f6",
+            borderRadius: 4,
+          },
+        ],
+      },
+      options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins } },
+    });
+  });
+
+  // 2. P&L by Day of Week
+  fetchData("/analytics/data/pnl-by-weekday/").then((d) => {
+    new Chart(document.getElementById("pnlByWeekday"), {
+      type: "bar",
+      data: {
+        labels: d.labels,
+        datasets: [
+          {
+            label: "Avg P&L ($)",
+            data: d.avg_pnl,
+            backgroundColor: d.avg_pnl.map((v) =>
+              v >= 0 ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.6)",
+            ),
+            borderRadius: 4,
+            yAxisID: "y",
+          },
+          {
+            label: "Win Rate (%)",
+            data: d.win_rates,
+            backgroundColor: "rgba(234,179,8,0.4)",
+            borderRadius: 4,
+            yAxisID: "y2",
+          },
+        ],
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          tooltip: {
+            callbacks: {
+              afterBody: (items) => {
+                const i = items[0].dataIndex;
+                return `Trades: ${d.counts[i]}`;
+              },
+            },
+          },
+        },
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: { position: "left", ticks: { color: "#64748b" }, grid: { color: "rgba(255,255,255,0.04)" } },
+          y2: { position: "right", ticks: { color: "#64748b" }, grid: { drawOnChartArea: false } },
+        },
+      },
+    });
+  });
+
+  // 3. Psych vs Outcome
+  fetchData("/analytics/data/psych-vs-outcome/").then((d) => {
+    new Chart(document.getElementById("psychVsOutcome"), {
+      type: "bar",
+      data: {
+        labels: d.data.map((x) => `Mood ${x.state}/5`),
+        datasets: [
+          {
+            label: "Avg P&L ($)",
+            data: d.data.map((x) => x.avg_pnl),
+            backgroundColor: "#3b82f6",
+            borderRadius: 4,
+            yAxisID: "y",
+          },
+          {
+            label: "Win Rate (%)",
+            data: d.data.map((x) => x.win_rate),
+            backgroundColor: "rgba(234,179,8,0.5)",
+            borderRadius: 4,
+            yAxisID: "y2",
+          },
+        ],
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: {
+            position: "left",
+            ticks: { color: "#64748b" },
+            grid: { color: "rgba(255,255,255,0.04)" },
+          },
+          y2: {
+            position: "right",
+            ticks: { color: "#64748b" },
+            grid: { drawOnChartArea: false },
+          },
+        },
+      },
+    });
+  });
+
+  // 4. Delta vs P&L scatter
+  fetchData("/analytics/data/delta-vs-pnl/").then((d) => {
+    new Chart(document.getElementById("deltaVsPnl"), {
+      type: "scatter",
+      data: {
+        datasets: [
+          {
+            label: "Trades",
+            data: d.points,
+            backgroundColor: "rgba(59,130,246,0.5)",
+            pointRadius: 4,
+          },
+        ],
+      },
+      options: { ...CHART_DEFAULTS },
+    });
+  });
+
+  // 5. Drawdown
+  fetchData("/analytics/data/drawdown/").then((d) => {
+    new Chart(document.getElementById("drawdown"), {
+      type: "line",
+      data: {
+        labels: d.labels,
+        datasets: [
+          {
+            label: "Equity ($)",
+            data: d.equity,
+            borderColor: "#22c55e",
+            backgroundColor: "rgba(34,197,94,0.05)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+          },
+          {
+            label: "Drawdown ($)",
+            data: d.drawdown,
+            borderColor: "#ef4444",
+            backgroundColor: "rgba(239,68,68,0.1)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,
+            },
+          },
+        },
+      },
+    });
+  });
+
+  // 6. Setup Quality
+  fetchData("/analytics/data/setup-quality/").then((d) => {
+    new Chart(document.getElementById("setupQuality"), {
+      type: "bar",
+      data: {
+        labels: d.data.map((x) => `Quality ${x.quality}/5`),
+        datasets: [
+          {
+            label: "Avg P&L ($)",
+            data: d.data.map((x) => x.avg_pnl),
+            backgroundColor: d.data.map((x) =>
+              x.avg_pnl >= 0 ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.6)",
+            ),
+            borderRadius: 4,
+          },
+        ],
+      },
+      options: { ...CHART_DEFAULTS },
+    });
+  });
+
+  // 7. Duration vs P&L
+  fetchData("/analytics/data/duration-vs-pnl/").then((d) => {
+    new Chart(document.getElementById("durationVsPnl"), {
+      type: "scatter",
+      data: {
+        datasets: [
+          {
+            label: "Trades",
+            data: d.points,
+            backgroundColor: "rgba(59,130,246,0.5)",
+            pointRadius: 4,
+          },
+        ],
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          x: {
+            ...CHART_DEFAULTS.scales.x,
+            title: { display: true, text: "Minutes", color: "#64748b" },
+          },
+        },
+      },
+    });
+  });
+
+  // 8. Monthly table
+  fetchData("/analytics/data/monthly-table/").then((d) => {
+    const tbody = document.getElementById("monthly-table-body");
+    if (!d.table.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="5" class="py-6 text-center text-slate-600">No data</td></tr>';
+      return;
+    }
+    tbody.innerHTML = d.table
+      .map(
+        (r) => `
+    <tr>
+      <td class="py-2 text-slate-300">${r.month}</td>
+      <td class="py-2 text-right text-slate-400">${r.trades}</td>
+      <td class="py-2 text-right text-slate-400">${r.win_rate}%</td>
+      <td class="py-2 text-right font-semibold ${r.total_pnl >= 0 ? "text-green-400" : "text-red-400"}">
+        ${r.total_pnl >= 0 ? "+" : ""}$${r.total_pnl.toFixed(2)}
+      </td>
+      <td class="py-2 text-right text-slate-400">${r.avg_rr !== null ? r.avg_rr : "—"}</td>
+    </tr>
+  `,
+      )
+      .join("");
+  });
+</script>
+{% endblock %}

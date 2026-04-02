@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}
+Delete Goal{% endblock %} {% block page_title %}Delete Goal{% endblock %} {% block content %}
+<div class="max-w-sm bg-[#161b27] rounded-xl border border-white/5 p-6">
+  <p class="text-slate-300 mb-4">
+    Delete goal "<strong>{{ goal.metric_display }}</strong>"?
+  </p>
+  <div class="flex gap-3">
+    <a
+      href="{% url 'goals' %}"
+      class="px-4 py-2 text-sm border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
+      >Cancel</a
+    >
+    <form method="POST">
+      {% csrf_token %}<button
+        class="px-4 py-2 text-sm bg-loss hover:bg-red-600 text-white rounded-lg"
+      >
+        Delete
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

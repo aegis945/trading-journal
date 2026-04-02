@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}
+IBKR TWS{% endblock %} {% block page_title %}IBKR TWS Connection{% endblock %} {% block header_actions %}
+<a
+  href="{% url 'ibkr_chain' %}"
+  class="px-3 py-1.5 text-xs border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
+  >Option Chain</a
+>
+<a
+  href="{% url 'ibkr_settings' %}"
+  class="px-3 py-1.5 text-xs border border-white/10 text-slate-400 hover:bg-white/5 rounded-lg"
+  >Settings</a
+>
+{% endblock %} {% block content %}
+<div class="space-y-4 max-w-lg">
+  <!-- live status badge, HTMX refreshed -->
+  <div
+    id="ibkr-status-badge"
+    hx-get="{% url 'ibkr_status' %}"
+    hx-trigger="load, every 10s"
+    hx-swap="innerHTML"
+  >
+    <div class="animate-pulse h-5 w-24 bg-white/5 rounded"></div>
+  </div>
+
+  <div class="bg-[#161b27] rounded-xl border border-white/5 p-5 space-y-2">
+    <p class="text-xs text-slate-500">
+      Host: <span class="text-slate-300 font-mono">{{ host }}</span>
+    </p>
+    <p class="text-xs text-slate-500">
+      Port: <span class="text-slate-300 font-mono">{{ port }}</span>
+    </p>
+    <p class="text-xs text-slate-500">
+      Client ID: <span class="text-slate-300 font-mono">{{ client_id }}</span>
+    </p>
+  </div>
+
+  {% if connected %}
+  <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+    <p class="text-xs font-medium text-slate-300 mb-3">Fetch SPX Greeks</p>
+    <div x-data="{expiry:'',strike:'',right:'C'}" class="space-y-3">
+      <div class="grid grid-cols-3 gap-2">
+        <input
+          x-model="expiry"
+          type="text"
+          placeholder="YYYYMMDD"
+          class="col-span-1 px-3 py-1.5 text-xs rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none"
+        />
+        <input
+          x-model="strike"
+          type="number"
+          placeholder="Strike"
+          class="col-span-1 px-3 py-1.5 text-xs rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none"
+        />
+        <select
+          x-model="right"
+          class="col-span-1 px-3 py-1.5 text-xs rounded-lg bg-[#1e263a] border border-white/10 text-slate-200 focus:border-accent focus:outline-none"
+        >
+          <option value="C">Call</option>
+          <option value="P">Put</option>
+        </select>
+      </div>
+      <button
+        @click="fetch(`{% url 'ibkr_greeks' %}?expiry=${expiry}&strike=${strike}&right=${right}`).then(r=>r.json()).then(d=>{ document.getElementById('greeks-result').textContent = JSON.stringify(d,null,2); })"
+        class="px-4 py-1.5 text-xs bg-accent hover:bg-blue-600 text-white rounded-lg"
+      >
+        Fetch Greeks
+      </button>
+      <pre
+        id="greeks-result"
+        class="mt-2 p-3 rounded-lg bg-[#0f1117] text-xs text-slate-400 font-mono whitespace-pre-wrap"
+      ></pre>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

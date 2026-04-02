@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}
+Performance Goals{% endblock %} {% block page_title %}Performance Goals{% endblock %} {% block header_actions %}
+<a
+  href="{% url 'goal_new' %}"
+  class="px-3 py-1.5 text-xs bg-accent hover:bg-blue-600 text-white rounded-lg"
+  >+ New Goal</a
+>
+{% endblock %} {% block content %}
+<div class="space-y-4">
+  {% if not goals %}
+  <div
+    class="bg-[#161b27] rounded-xl border border-white/5 p-8 text-center text-slate-500"
+  >
+    No goals set yet.
+  </div>
+  {% endif %} {% for goal in goals %}
+  <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div>
+        <p class="text-sm font-medium text-slate-200">
+          {{ goal.metric_display }}
+        </p>
+        <p class="text-xs text-slate-500">
+          {{ goal.period_display }} — target {{ goal.target_value }}
+        </p>
+      </div>
+      <div class="flex gap-2 text-xs">
+        <a
+          href="{% url 'goal_edit' goal.pk %}"
+          class="text-slate-400 hover:text-white"
+          >Edit</a
+        >
+        <a
+          href="{% url 'goal_delete' goal.pk %}"
+          class="text-loss hover:underline"
+          >Del</a
+        >
+      </div>
+    </div>
+    {% if goal.current_value is not None %}
+    <div class="flex items-center gap-3">
+      <div class="flex-1 bg-white/5 rounded-full h-2">
+        <div
+          class="h-2 rounded-full {% if goal.is_met %}bg-profit{% else %}bg-accent{% endif %}"
+          style="width: {{ goal.progress_pct|default:0|floatformat:0 }}%"
+        ></div>
+      </div>
+      <span class="text-xs text-slate-400 whitespace-nowrap"
+        >{{ goal.current_value|floatformat:2 }} / {{ goal.target_value }}</span
+      >
+      {% if goal.is_met %}<span class="text-xs text-profit">✓ Met</span>{% endif %}
+    </div>
+    {% endif %} {% if goal.notes %}
+    <p class="mt-2 text-xs text-slate-500">{{ goal.notes }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

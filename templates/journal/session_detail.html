@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load journal_extras %}
+{% block title %}
+Session {{ session.date }}{% endblock %} {% block page_title %}Session — {{ session.date|date:"l, N j Y" }}{% endblock %} {% block content %}
+<div class="grid grid-cols-3 gap-6">
+  <!-- Pre-market notes form -->
+  <div class="col-span-2 space-y-4">
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <h2 class="text-sm font-semibold text-slate-200 mb-4">
+        Pre-Market Notes
+      </h2>
+      <form method="POST">
+        {% csrf_token %}
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Market Bias</label>
+            {{ form.market_bias }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">VIX</label>
+            {{ form.vix_level }}
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs text-slate-400 mb-1"
+            >Psychological State (1–5)</label
+          >
+          {{ form.psychological_state }}
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs text-slate-400 mb-1"
+            >Mental/Physical Notes</label
+          >
+          {{ form.psychological_notes }}
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs text-slate-400 mb-1"
+            >Market Context Notes</label
+          >
+          {{ form.market_open_notes }}
+        </div>
+        <div class="pt-3 border-t border-white/5">
+          <h3 class="text-xs text-slate-500 uppercase tracking-wider mb-3">
+            Post-Session Reflection
+          </h3>
+          <div class="mb-4">
+            <label class="block text-xs text-slate-400 mb-1"
+              >Session Notes</label
+            >
+            {{ form.session_notes }}
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"
+              >Lessons Learned</label
+            >
+            {{ form.lessons_learned }}
+          </div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <button
+            type="submit"
+            class="px-4 py-2 text-sm bg-accent hover:bg-blue-500 text-white rounded-lg transition-colors"
+          >
+            Save Session
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Session trades -->
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-slate-200">Trades</h2>
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold {{ total_pnl|pnl_color }}">
+            Session P&L: {{ total_pnl|pnl_str }}
+          </span>
+          <a
+            href="{% url 'trade_add' %}"
+            class="text-xs text-accent hover:underline"
+            >+ Add Trade</a
+          >
+        </div>
+      </div>
+      <div class="space-y-1">
+        {% for trade in trades %}
+        <a
+          href="{% url 'trade_detail' trade.pk %}"
+          class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm {% if trade.pnl and trade.pnl > 0 %}bg-profit/5 hover:bg-profit/10 {% elif trade.pnl and trade.pnl < 0 %}bg-loss/5 hover:bg-loss/10 {% else %}bg-white/3 hover:bg-white/5{% endif %} transition-colors"
+        >
+          <span class="text-slate-300">
+            {{ trade.option_type }} {{ trade.strike }}
+            <span class="text-slate-500 text-xs ml-1"
+              >{{ trade.get_trade_type_display }}</span
+            >
+          </span>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500"
+              >{{ trade.entry_time }}{% if trade.exit_time %} – {{ trade.exit_time }}{% endif %}</span
+            >
+            {% if trade.pnl is not None %}
+            <span class="text-xs font-semibold {{ trade.pnl|pnl_color }}">
+              {{ trade.pnl|pnl_str }}
+            </span>
+            {% else %}
+            <span
+              class="text-xs px-1.5 py-0.5 rounded bg-neutral/10 text-neutral"
+              >OPEN</span
+            >
+            {% endif %}
+          </div>
+        </a>
+        {% empty %}
+        <p class="py-6 text-center text-sm text-slate-600">
+          No trades for this session.
+        </p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Checklist sidebar -->
+  <div>
+    <div class="bg-[#161b27] rounded-xl border border-white/5 p-5 sticky top-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-slate-200">
+          Pre-Trade Checklist
+        </h2>
+        {% if daily_routine.checklist_template %}
+        <span id="checklist-pct" class="text-xs text-slate-500"
+          >{{ daily_routine.completion_percent }}%</span
+        >
+        {% endif %}
+      </div>
+
+      {% if daily_routine.checklist_template %}
+      <div class="w-full h-1.5 bg-white/5 rounded-full mb-4">
+        <div
+          id="checklist-bar"
+          class="h-1.5 rounded-full bg-accent transition-all duration-300"
+          style="width: {{ daily_routine.completion_percent }}%"
+        ></div>
+      </div>
+
+      <div id="checklist-item-list">
+      {% regroup daily_routine.checklist_template.items by category as grouped_items %} {% for group in grouped_items %} {% if group.grouper %}
+      <p class="text-xs text-slate-500 uppercase tracking-wider mt-3 mb-1.5">
+        {{ group.grouper }}
+      </p>
+      {% endif %} {% for item in group.list %} {% include "components/checklist_item.html" with item=item checked=daily_routine.completed_items|get_item:item.id session=session %}
+      {% endfor %} {% endfor %}
+      </div> {% else %}
+      <p class="text-sm text-slate-600">
+        No active checklist.
+        <a
+          href="{% url 'settings_checklist' %}"
+          class="text-accent hover:underline"
+          >Configure →</a
+        >
+      </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
