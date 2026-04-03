@@ -26,7 +26,7 @@ STRATEGIES = [
     ["momentum"],
     ["VWAP reclaim"],
     ["mean reversion"],
-    ["0dte scalp"],
+    ["7dte scalp"],
     ["gap fill", "momentum"],
     ["VWAP rejection"],
     ["trend follow"],
@@ -59,7 +59,7 @@ JOURNAL_TITLES_LESSONS = [
     "Sized too large on a low-conviction setup",
     "Do not trade into FOMC minutes",
     "Always set hard SL before entry",
-    "Averaging down on losing 0DTE is a mistake",
+    "Averaging down on losing 7DTE is a mistake",
 ]
 
 JOURNAL_TITLES_MARKET = [
@@ -101,7 +101,7 @@ CHECKLIST_ITEMS = [
     {"id": "rc1", "category": "Risk Check", "label": "Max 2 contracts per trade confirmed", "required": True},
     {"id": "rc2", "category": "Risk Check", "label": "Hard stop-loss level set before entry", "required": True},
     {"id": "rc3", "category": "Risk Check", "label": "Daily max loss < $500", "required": True},
-    {"id": "rc4", "category": "Risk Check", "label": "No averaging down on losing 0DTE", "required": True},
+    {"id": "rc4", "category": "Risk Check", "label": "No averaging down on losing 7DTE", "required": True},
     {"id": "ms1", "category": "Mental State", "label": "Slept ≥6 hours", "required": False},
     {"id": "ms2", "category": "Mental State", "label": "No revenge trading after a losing day", "required": True},
     {"id": "ms3", "category": "Mental State", "label": "Not emotionally disturbed (news, stress, etc.)", "required": True},
@@ -121,7 +121,7 @@ def weekdays_back(n: int, reference: date) -> list[date]:
 
 
 class Command(BaseCommand):
-    help = 'Seed the database with 30 days of sample SPX 0DTE trading data'
+    help = 'Seed the database with 30 days of sample SPX 7DTE trading data'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -140,7 +140,7 @@ class Command(BaseCommand):
 
         self.stdout.write('Creating checklist template…')
         cl, _ = PreTradeChecklist.objects.get_or_create(
-            name='SPX 0DTE Standard',
+            name='SPX 7DTE Standard',
             defaults={'items': CHECKLIST_ITEMS, 'is_active': True},
         )
         if not cl.is_active:
@@ -187,7 +187,7 @@ class Command(BaseCommand):
             content    = title + random.choice(CONTENT_TAILS)
             session    = random.choice(all_sessions) if random.random() > 0.3 else None
             trade      = random.choice(all_trades)   if random.random() > 0.5 and all_trades else None
-            tags       = random.sample(["spx", "0dte", "vix", "options", "discipline", "risk"], k=random.randint(1, 3))
+            tags       = random.sample(["spx", "7dte", "vix", "options", "discipline", "risk"], k=random.randint(1, 3))
             entry = JournalEntry.objects.create(
                 title=title,
                 content=content,
