@@ -368,27 +368,27 @@
 
         <!-- Top bar -->
         <header
-          class="flex items-center justify-between h-[52px] px-6 flex-shrink-0 relative"
+          class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center h-[52px] px-6 gap-4 flex-shrink-0"
           style="background: var(--bg-surface); border-bottom: 1px solid var(--border);"
         >
           <!-- Page title -->
-          <div class="flex items-center gap-3 min-w-0">
+          <div class="flex items-center gap-3 min-w-0 justify-self-start">
             <h1 class="text-sm font-semibold truncate" style="color: var(--text-primary);">
               {% block page_title %}{% endblock %}
             </h1>
             {% block breadcrumb %}{% endblock %}
           </div>
 
-          <!-- Market status (centred) -->
-          <div class="hidden lg:flex items-center gap-3 absolute left-1/2 -translate-x-1/2">
-            <span id="market-date" class="mono text-xs" style="color: var(--text-secondary);"></span>
-            <span class="mono text-xs" style="color:var(--text-muted)">·</span>
-              <span id="market-date-ny" class="mono text-xs" style="color: var(--text-secondary);"></span>
+          <!-- Market status -->
+          <div class="hidden xl:flex items-center justify-center gap-2 justify-self-center min-w-0 max-w-full overflow-hidden whitespace-nowrap px-2">
+            <span id="market-date" class="mono text-xs truncate" style="color: var(--text-secondary);"></span>
+            <span class="mono text-xs shrink-0" style="color:var(--text-muted)">·</span>
+            <span id="market-date-ny" class="mono text-xs truncate" style="color: var(--text-secondary);"></span>
             <span id="market-status" class="text-xs px-2.5 py-0.5 rounded-full font-medium"></span>
           </div>
 
           <!-- Right actions -->
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 justify-self-end shrink-0">
             <button
               hx-get="{% url 'trade_quick_add' %}"
               hx-target="#modal-container"
@@ -452,21 +452,47 @@
 
       // ── Market session status (ET) ───────────────────
       (function () {
+        function getZonedParts(timeZone) {
+          var formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: timeZone,
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          var parts = formatter.formatToParts(new Date());
+          return {
+            weekday: parts.find(function (part) { return part.type === 'weekday'; }).value,
+            month: parts.find(function (part) { return part.type === 'month'; }).value,
+            day: parts.find(function (part) { return part.type === 'day'; }).value,
+            hour: Number(parts.find(function (part) { return part.type === 'hour'; }).value),
+            minute: Number(parts.find(function (part) { return part.type === 'minute'; }).value),
+          };
+        }
+
+        function formatClock(parts, label) {
+          var minute = String(parts.minute).padStart(2, '0');
+          return parts.weekday + ' ' + parts.month + ' ' + parts.day + ' ' + parts.hour + ':' + minute + ' ' + label;
+        }
+
         function update() {
-          var etStr = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-          var et    = new Date(etStr);
-          var h = et.getHours(), mn = et.getMinutes(), day = et.getDay();
+          var vilnius = getZonedParts('Europe/Vilnius');
+          var ny = getZonedParts('America/New_York');
+          var h = ny.hour, mn = ny.minute;
+          var weekdayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+          var day = weekdayMap[ny.weekday];
           var tot = h * 60 + mn;
           var dateEl   = document.getElementById('market-date');
           var statusEl = document.getElementById('market-status');
           if (!statusEl) return;
           if (dateEl) {
-            var now = new Date();
-            dateEl.textContent = now.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Vilnius', hour12:false }) + ' VLN';
+            dateEl.textContent = formatClock(vilnius, 'VLN');
           }
           var nyEl = document.getElementById('market-date-ny');
           if (nyEl) {
-            nyEl.textContent = et.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) + ' NY';
+            nyEl.textContent = formatClock(ny, 'NY');
           }
           var label, bg, color;
           if (day === 0 || day === 6) {
