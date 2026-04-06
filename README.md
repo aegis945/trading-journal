@@ -1,6 +1,6 @@
 # Trading Journal
 
-A personal SPX options trading journal built with Django. Bloomberg-inspired dark UI, runs entirely on your local machine.
+A personal options trading journal built with Django. Bloomberg-inspired dark UI, runs entirely on your local machine.
 
 ## Features
 

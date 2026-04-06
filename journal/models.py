@@ -1,7 +1,7 @@
 """
 journal/models.py
 
-All domain models for the SPX trading journal.
+All domain models for the trading journal.
 P&L and risk/reward are computed automatically in Trade.save().
 All times stored in ET (America/New_York) — USE_TZ=True in settings.
 """
