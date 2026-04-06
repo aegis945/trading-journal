@@ -4,13 +4,6 @@
 {% block page_title %}Trade Log{% endblock %}
 
 {% block header_actions %}
-<a href="{% url 'trade_add' %}"
-   class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
-   style="border-color:var(--border);color:var(--text-secondary);"
-   onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text-primary)'"
-   onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">
-  <i data-lucide="pencil" style="width:11px;height:11px;"></i> Manual
-</a>
 <a href="{% url 'import_upload' %}"
    class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
    style="border-color:var(--border);color:var(--text-secondary);"
