@@ -6,7 +6,7 @@ from django import forms
 from .models import (
     Trade, TradingSession, JournalEntry,
     PreTradeChecklist, PerformanceGoal,
-    OptionType, TradeType, TradeStatus, MarketBias,
+    OptionType, TradeType, TradeStatus, MarketBias, is_weekend_day,
 )
 
 
@@ -69,6 +69,12 @@ class TradeForm(forms.ModelForm):
     def clean_strategy_tags_text(self):
         raw = self.cleaned_data.get('strategy_tags_text', '')
         return [t.strip() for t in raw.split(',') if t.strip()]
+
+    def clean_trade_date(self):
+        trade_date = self.cleaned_data['trade_date']
+        if is_weekend_day(trade_date):
+            raise forms.ValidationError('Trades cannot be logged on weekends.')
+        return trade_date
 
     def save(self, commit=True):
         trade = super().save(commit=False)

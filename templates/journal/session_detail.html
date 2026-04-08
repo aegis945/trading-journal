@@ -4,6 +4,20 @@
 {% block page_title %}Session — {{ session.date|date:"l, N j Y" }}{% endblock %}
 {% block content %}
 
+{% if market_closed %}
+<div class="card p-6 animate-in">
+  <div class="flex items-start gap-3">
+    <span class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:var(--accent-glow);color:var(--accent)">
+      <i data-lucide="trees" style="width:18px;height:18px;"></i>
+    </span>
+    <div>
+      <h2 class="text-base font-semibold" style="color:var(--text-primary);">Market is closed.</h2>
+      <p class="text-sm mt-1" style="color:var(--text-secondary);">Weekend dates cannot have trading sessions or trades. Enjoy the weekend.</p>
+    </div>
+  </div>
+</div>
+{% else %}
+
 <div class="grid grid-cols-3 gap-6">
 
   <!-- Pre-market notes form + trades -->
@@ -170,4 +184,5 @@
   </div>
 
 </div>
+{% endif %}
 {% endblock %}

@@ -70,6 +70,19 @@
   <!-- ══════════════════════════════════════════════
        ROW 2 — Session + Checklist
   ══════════════════════════════════════════════ -->
+  {% if is_weekend %}
+  <div class="card p-6 animate-in" style="animation-delay:60ms;">
+    <div class="flex items-start gap-3">
+      <span class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:var(--accent-glow);color:var(--accent)">
+        <i data-lucide="trees" style="width:18px;height:18px;"></i>
+      </span>
+      <div>
+        <h2 class="text-base font-semibold" style="color:var(--text-primary);">Market is closed.</h2>
+        <p class="text-sm mt-1" style="color:var(--text-secondary);">No session to fill out today. Enjoy the weekend and come back on the next trading day.</p>
+      </div>
+    </div>
+  </div>
+  {% else %}
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 animate-in" style="animation-delay:60ms;">
 
     <!-- Today's Session -->
@@ -221,6 +234,7 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 
   <!-- ══════════════════════════════════════════════
        ROW 3 — Tags + Recent Journal

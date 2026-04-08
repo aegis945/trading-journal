@@ -6,9 +6,21 @@ P&L and risk/reward are computed automatically in Trade.save().
 All times stored in ET (America/New_York) — USE_TZ=True in settings.
 """
 
+import datetime
+
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from django.db import models
 from django.utils import timezone
+
+
+def is_weekend_day(value):
+    return value.weekday() >= 5
+
+
+def previous_market_day(value):
+    while is_weekend_day(value):
+        value -= datetime.timedelta(days=1)
+    return value
 
 
 # ---------------------------------------------------------------------------

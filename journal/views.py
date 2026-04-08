@@ -23,7 +23,7 @@ from django.views.decorators.http import require_POST, require_GET
 from .models import (
     TradingSession, Trade, PreTradeChecklist, DailyRoutine,
     JournalEntry, PerformanceGoal,
-    TradeStatus, TradeType, OptionType, MarketBias,
+    TradeStatus, TradeType, OptionType, MarketBias, is_weekend_day, previous_market_day,
 )
 from .forms import TradeForm, TradingSessionForm
 
@@ -33,28 +33,35 @@ from .forms import TradeForm, TradingSessionForm
 
 def dashboard(request):
     today = timezone.localdate()
+    is_weekend = is_weekend_day(today)
 
-    # Auto-create today's session if it doesn't exist
-    session, created = TradingSession.objects.get_or_create(date=today)
+    session = None
+    daily_routine = None
+    session_trades = Trade.objects.none()
+    today_pnl = Decimal('0')
 
-    # Get or create a daily routine linked to the active checklist template
-    try:
-        daily_routine = session.daily_routine
-    except DailyRoutine.DoesNotExist:
-        active_template = PreTradeChecklist.objects.filter(is_active=True).first()
-        daily_routine = DailyRoutine.objects.create(
+    if not is_weekend:
+        # Auto-create today's session if it doesn't exist
+        session, created = TradingSession.objects.get_or_create(date=today)
+
+        # Get or create a daily routine linked to the active checklist template
+        try:
+            daily_routine = session.daily_routine
+        except DailyRoutine.DoesNotExist:
+            active_template = PreTradeChecklist.objects.filter(is_active=True).first()
+            daily_routine = DailyRoutine.objects.create(
+                session=session,
+                checklist_template=active_template,
+            )
+
+        # Current session trades
+        session_trades = Trade.objects.filter(session=session)
+
+        # Today's P&L
+        today_pnl = Trade.objects.filter(
             session=session,
-            checklist_template=active_template,
-        )
-
-    # Current session trades
-    session_trades = Trade.objects.filter(session=session)
-
-    # Today's P&L
-    today_pnl = Trade.objects.filter(
-        session=session,
-        status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
-    ).aggregate(total=Sum('pnl'))['total'] or Decimal('0')
+            status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
+        ).aggregate(total=Sum('pnl'))['total'] or Decimal('0')
 
     # 30-day stats
     thirty_days_ago = today - datetime.timedelta(days=30)
@@ -88,6 +95,7 @@ def dashboard(request):
 
     context = {
         'session': session,
+        'session_date': today,
         'daily_routine': daily_routine,
         'session_trades': session_trades,
         'today_pnl': today_pnl,
@@ -97,7 +105,8 @@ def dashboard(request):
         'streak_type': streak_type,
         'tag_stats': tag_stats,
         'recent_journal': recent_journal,
-        'trade_form': TradeForm(initial={'trade_date': today, 'expiry': today, 'symbol': 'SPX'}),
+        'trade_form': TradeForm(initial={'trade_date': previous_market_day(today), 'expiry': previous_market_day(today), 'symbol': 'SPX'}),
+        'is_weekend': is_weekend,
         'now': timezone.now(),
     }
     return render(request, 'dashboard/index.html', context)
@@ -191,14 +200,16 @@ def trade_add(request):
             return redirect('trade_detail', pk=trade.pk)
     else:
         today = timezone.localdate()
-        form = TradeForm(initial={'trade_date': today, 'expiry': today, 'symbol': 'SPX'})
+        default_trade_date = previous_market_day(today)
+        form = TradeForm(initial={'trade_date': default_trade_date, 'expiry': default_trade_date, 'symbol': 'SPX'})
     return render(request, 'journal/trade_form.html', {'form': form, 'title': 'Add Trade'})
 
 
 def trade_quick_add(request):
     """Returns HTMX modal partial for the quick-add drawer from the topbar."""
     today = timezone.localdate()
-    form = TradeForm(initial={'trade_date': today, 'expiry': today, 'symbol': 'SPX'})
+    default_trade_date = previous_market_day(today)
+    form = TradeForm(initial={'trade_date': default_trade_date, 'expiry': default_trade_date, 'symbol': 'SPX'})
     if request.method == 'POST':
         form = TradeForm(request.POST, request.FILES)
         if form.is_valid():
@@ -292,6 +303,16 @@ def session_detail(request, date):
     except ValueError:
         return redirect('session_list')
 
+    if is_weekend_day(session_date):
+        return render(request, 'journal/session_detail.html', {
+            'session': TradingSession(date=session_date),
+            'daily_routine': None,
+            'trades': Trade.objects.none(),
+            'total_pnl': Decimal('0'),
+            'form': None,
+            'market_closed': True,
+        })
+
     session = TradingSession.objects.filter(date=session_date).first()
     is_new_session = session is None
 
@@ -334,6 +355,7 @@ def session_detail(request, date):
         'trades': trades,
         'total_pnl': total_pnl,
         'form': form,
+        'market_closed': False,
     })
 
 
@@ -347,6 +369,9 @@ def checklist_toggle(request, date, item_id):
     try:
         session_date = datetime.date.fromisoformat(date)
     except ValueError:
+        return HttpResponse(status=400)
+
+    if is_weekend_day(session_date):
         return HttpResponse(status=400)
 
     session = get_object_or_404(TradingSession, date=session_date)
@@ -681,6 +706,9 @@ def import_confirm(request, filename):
         ibkr_id = row.get('ibkr_trade_id')
         if ibkr_id and Trade.objects.filter(ibkr_trade_id=ibkr_id).exists():
             skipped_count += 1
+            continue
+        if is_weekend_day(row['trade_date']):
+            error_count += 1
             continue
         try:
             # Attach to a session by trade_date — get_or_create
