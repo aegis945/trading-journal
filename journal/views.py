@@ -300,6 +300,21 @@ def trade_edit(request, pk):
     return render(request, 'journal/trade_form.html', {'form': form, 'trade': trade, 'title': 'Edit Trade'})
 
 
+@require_POST
+def trade_screenshot_delete(request, pk):
+    trade = get_object_or_404(Trade, pk=pk)
+
+    if trade.ta_screenshot:
+        trade.ta_screenshot.delete(save=False)
+        trade.ta_screenshot = None
+        trade.save()
+        messages.success(request, 'Screenshot deleted. You can upload a new one now.')
+    else:
+        messages.info(request, 'This trade does not have a saved screenshot.')
+
+    return redirect('trade_edit', pk=trade.pk)
+
+
 def trade_delete(request, pk):
     trade = get_object_or_404(Trade, pk=pk)
     if request.method == 'POST':

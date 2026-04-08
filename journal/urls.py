@@ -11,6 +11,7 @@ urlpatterns = [
     path('trades/quick-add/', views.trade_quick_add, name='trade_quick_add'),
     path('trades/<int:pk>/', views.trade_detail, name='trade_detail'),
     path('trades/<int:pk>/edit/', views.trade_edit, name='trade_edit'),
+    path('trades/<int:pk>/screenshot/delete/', views.trade_screenshot_delete, name='trade_screenshot_delete'),
     path('trades/<int:pk>/delete/', views.trade_delete, name='trade_delete'),
     path('trades/export/', views.trade_export, name='trade_export'),
 

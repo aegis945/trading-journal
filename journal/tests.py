@@ -1,8 +1,13 @@
 import datetime
+import os
+import shutil
+import tempfile
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -137,6 +142,77 @@ class TradingSessionEmptyStateTests(TestCase):
 
 		self.assertFalse(TradingSession.objects.filter(date=holiday).exists())
 		self.assertContains(response, 'Christmas Day is a market holiday')
+
+
+TEMP_MEDIA_ROOT = tempfile.mkdtemp()
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class TradeScreenshotActionTests(TestCase):
+	@classmethod
+	def tearDownClass(cls):
+		super().tearDownClass()
+		shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
+	def test_trade_edit_shows_direct_delete_screenshot_action(self):
+		trade_date = _market_day()
+		trade = Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 0),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+		)
+		trade.ta_screenshot = SimpleUploadedFile(
+			'chart.gif',
+			b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;',
+			content_type='image/gif',
+		)
+		trade.save()
+
+		response = self.client.get(reverse('trade_edit', args=[trade.pk]))
+
+		self.assertContains(response, 'Delete screenshot')
+		self.assertContains(response, reverse('trade_screenshot_delete', args=[trade.pk]))
+
+	def test_trade_screenshot_delete_removes_file_and_returns_to_edit(self):
+		trade_date = _market_day()
+		trade = Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 0),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+		)
+		trade.ta_screenshot = SimpleUploadedFile(
+			'chart.gif',
+			b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;',
+			content_type='image/gif',
+		)
+		trade.save()
+		screenshot_path = trade.ta_screenshot.path
+
+		response = self.client.post(reverse('trade_screenshot_delete', args=[trade.pk]), follow=True)
+
+		trade.refresh_from_db()
+		self.assertRedirects(response, reverse('trade_edit', args=[trade.pk]))
+		self.assertFalse(trade.ta_screenshot)
+		self.assertFalse(os.path.exists(screenshot_path))
+		self.assertContains(response, 'Screenshot deleted. You can upload a new one now.')
 
 	def test_dashboard_prompts_for_missing_post_session_reflection_when_trades_exist(self):
 		trade_date = _market_day()
