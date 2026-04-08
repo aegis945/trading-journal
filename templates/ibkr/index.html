@@ -15,11 +15,33 @@
 
 <div class="space-y-5 max-w-lg">
 
-  <div id="ibkr-status-badge"
-    hx-get="{% url 'ibkr_status' %}"
-    hx-trigger="load, every 10s"
-    hx-swap="innerHTML">
-    <div class="animate-pulse rounded" style="height:20px;width:96px;background:var(--bg-elevated)"></div>
+  <div class="card p-5 animate-in">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Connection Status</h3>
+      <button
+        hx-get="{% url 'ibkr_status' %}"
+        hx-target="#ibkr-status-pill"
+        hx-swap="innerHTML"
+        class="inline-flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg transition-colors"
+        style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+        onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">
+        <i data-lucide="refresh-cw" style="width:12px;height:12px"></i>
+        Check connection
+      </button>
+    </div>
+    <div id="ibkr-status-pill">
+      {% if connected %}
+      <span class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full"
+            style="background:var(--profit-glow);color:var(--profit);border:1px solid rgba(16,185,129,0.2)">
+        <span class="w-1.5 h-1.5 rounded-full bg-profit"></span>TWS Connected
+      </span>
+      {% else %}
+      <span class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full"
+            style="background:rgba(100,116,139,0.1);color:var(--text-secondary);border:1px solid var(--border)">
+        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>Not connected
+      </span>
+      {% endif %}
+    </div>
   </div>
 
   <div class="card p-5 space-y-2.5 animate-in">

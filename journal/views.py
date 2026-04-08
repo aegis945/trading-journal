@@ -248,6 +248,14 @@ def trade_list(request):
     })
 
 
+def _ibkr_connected():
+    try:
+        from ibkr.client import ib_client
+        return ib_client.is_connected()
+    except Exception:
+        return False
+
+
 def trade_add(request):
     if request.method == 'POST':
         form = TradeForm(request.POST, request.FILES)
@@ -259,7 +267,7 @@ def trade_add(request):
         today = timezone.localdate()
         default_trade_date = previous_market_day(today)
         form = TradeForm(initial={'trade_date': default_trade_date, 'expiry': default_trade_date, 'symbol': 'SPX'})
-    return render(request, 'journal/trade_form.html', {'form': form, 'title': 'Add Trade'})
+    return render(request, 'journal/trade_form.html', {'form': form, 'title': 'Add Trade', 'ibkr_connected': _ibkr_connected()})
 
 
 def trade_quick_add(request):
@@ -297,7 +305,7 @@ def trade_edit(request, pk):
             return redirect('trade_detail', pk=trade.pk)
     else:
         form = TradeForm(instance=trade)
-    return render(request, 'journal/trade_form.html', {'form': form, 'trade': trade, 'title': 'Edit Trade'})
+    return render(request, 'journal/trade_form.html', {'form': form, 'trade': trade, 'title': 'Edit Trade', 'ibkr_connected': _ibkr_connected()})
 
 
 @require_POST

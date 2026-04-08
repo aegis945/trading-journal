@@ -16,29 +16,30 @@ from django.views.decorators.http import require_GET
 def ibkr_status_page(request):
     from .client import ib_client
     connected = ib_client.is_connected()
-    return render(request, 'ibkr/index.html', {'connected': connected})
+    return render(request, 'ibkr/index.html', {
+        'connected': connected,
+        'host': django_settings.IBKR_HOST,
+        'port': django_settings.IBKR_PORT,
+        'client_id': django_settings.IBKR_CLIENT_ID,
+    })
 
 
 def ibkr_status(request):
-    """HTMX partial — returns a coloured dot + text."""
+    """HTMX partial — returns a status pill. No auto-polling; called on demand only."""
     from .client import ib_client
     connected = ib_client.is_connected()
 
     if connected:
         html = (
-            '<div class="px-4 py-3 border-t border-white/5 flex items-center gap-2"'
-            ' hx-get="/ibkr/status/" hx-trigger="every 10s" hx-swap="outerHTML">'
-            '<span class="inline-block w-2 h-2 rounded-full bg-profit"></span>'
-            '<span class="text-xs text-profit truncate" :class="sidebarOpen ? \'block\' : \'hidden\'">TWS Connected</span>'
-            '</div>'
+            '<span class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full"'
+            ' style="background:var(--profit-glow);color:var(--profit);border:1px solid rgba(16,185,129,0.2)">'
+            '<span class="w-1.5 h-1.5 rounded-full bg-profit"></span>TWS Connected</span>'
         )
     else:
         html = (
-            '<div class="px-4 py-3 border-t border-white/5 flex items-center gap-2"'
-            ' hx-get="/ibkr/status/" hx-trigger="every 10s" hx-swap="outerHTML">'
-            '<span class="inline-block w-2 h-2 rounded-full bg-slate-500"></span>'
-            '<span class="text-xs text-slate-500 truncate" :class="sidebarOpen ? \'block\' : \'hidden\'">TWS Offline</span>'
-            '</div>'
+            '<span class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full"'
+            ' style="background:rgba(100,116,139,0.1);color:var(--text-secondary);border:1px solid var(--border)">'
+            '<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>Not connected</span>'
         )
     return HttpResponse(html)
 

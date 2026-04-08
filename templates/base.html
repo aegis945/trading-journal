@@ -345,23 +345,6 @@
           {% endwith %}
         </nav>
 
-        <!-- TWS status -->
-        <div
-          id="tws-status-bar"
-          class="px-3 py-3 flex items-center gap-2.5 flex-shrink-0"
-          style="border-top: 1px solid var(--border);"
-          hx-get="{% url 'ibkr_status' %}"
-          hx-trigger="load, every 10s"
-          hx-swap="outerHTML"
-        >
-          <span class="flex-shrink-0 w-2 h-2 rounded-full bg-slate-600 animate-pulse"></span>
-          <span
-            class="text-xs truncate transition-all duration-200"
-            style="color: var(--text-secondary);"
-            :class="sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'"
-          >Connecting…</span>
-        </div>
-
         <!-- Collapse toggle -->
         <button
           @click="sidebarOpen = !sidebarOpen"
