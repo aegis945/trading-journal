@@ -40,13 +40,13 @@
     <div class="grid grid-cols-7" style="border-bottom:1px solid var(--border);">
       {% for cell in week %}
       {% if cell %}
-      {% if cell.date.weekday >= 5 %}
+      {% if cell.is_closed %}
       <div class="min-h-[88px] p-2.5 relative"
            style="border-right:1px solid var(--border);background:rgba(255,255,255,0.02);opacity:0.65;">
         <span class="text-xs font-semibold" style="color:var(--text-muted);">
           {{ cell.date.day }}
         </span>
-        <p class="text-[11px] mt-2" style="color:var(--text-muted);">Closed</p>
+        <p class="text-[11px] mt-2" style="color:var(--text-muted);">{{ cell.closed_label|default:"Closed" }}</p>
       </div>
       {% else %}
       <a href="{% url 'session_detail' cell.date|date:'Y-m-d' %}"
@@ -60,9 +60,8 @@
          onmouseover="this.style.filter='brightness(1.35)'"
          onmouseout="this.style.filter=''">
         <!-- Day number -->
-        <span class="text-xs font-semibold
-          {% if cell.is_today %}text-accent{% elif cell.date.weekday >= 5 %}{% else %}{% endif %}"
-          style="{% if not cell.is_today %}color:{% if cell.date.weekday >= 5 %}var(--text-muted){% else %}var(--text-secondary){% endif %};{% endif %}">
+        <span class="text-xs font-semibold {% if cell.is_today %}text-accent{% endif %}"
+          style="{% if not cell.is_today %}color:var(--text-secondary);{% endif %}">
           {{ cell.date.day }}
         </span>
         <!-- P&L -->

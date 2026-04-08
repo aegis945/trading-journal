@@ -7,18 +7,47 @@ All times stored in ET (America/New_York) — USE_TZ=True in settings.
 """
 
 import datetime
+from functools import lru_cache
 
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from django.db import models
 from django.utils import timezone
+import holidays
 
 
 def is_weekend_day(value):
     return value.weekday() >= 5
 
 
+@lru_cache(maxsize=None)
+def nyse_holidays_for_year(year):
+    return holidays.financial_holidays('NYSE', years=[year])
+
+
+def is_market_holiday(value):
+    return value in nyse_holidays_for_year(value.year)
+
+
+def market_holiday_name(value):
+    if not is_market_holiday(value):
+        return ''
+    return nyse_holidays_for_year(value.year).get(value, 'Holiday')
+
+
+def market_closed_label(value):
+    if is_weekend_day(value):
+        return 'Weekend'
+    if is_market_holiday(value):
+        return 'Holiday'
+    return ''
+
+
+def is_market_closed_day(value):
+    return is_weekend_day(value) or is_market_holiday(value)
+
+
 def previous_market_day(value):
-    while is_weekend_day(value):
+    while is_market_closed_day(value):
         value -= datetime.timedelta(days=1)
     return value
 
@@ -143,8 +172,6 @@ class TradingSession(models.Model):
             (self.session_notes or '').strip()
             or (self.lessons_learned or '').strip()
         )
-
-
 # ---------------------------------------------------------------------------
 # PreTradeChecklist (template definition)
 # ---------------------------------------------------------------------------

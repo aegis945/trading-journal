@@ -23,7 +23,8 @@ from django.views.decorators.http import require_POST, require_GET
 from .models import (
     TradingSession, Trade, PreTradeChecklist, DailyRoutine,
     JournalEntry, PerformanceGoal,
-    TradeStatus, TradeType, OptionType, MarketBias, is_weekend_day, previous_market_day,
+    TradeStatus, TradeType, OptionType, MarketBias,
+    is_market_closed_day, market_closed_label, market_holiday_name, previous_market_day,
 )
 from .forms import TradeForm, TradingSessionForm
 
@@ -33,14 +34,14 @@ from .forms import TradeForm, TradingSessionForm
 
 def dashboard(request):
     today = timezone.localdate()
-    is_weekend = is_weekend_day(today)
+    is_market_closed = is_market_closed_day(today)
 
     session = None
     daily_routine = None
     session_trades = Trade.objects.none()
     today_pnl = Decimal('0')
 
-    if not is_weekend:
+    if not is_market_closed:
         # Auto-create today's session if it doesn't exist
         session, created = TradingSession.objects.get_or_create(date=today)
 
@@ -106,7 +107,9 @@ def dashboard(request):
         'tag_stats': tag_stats,
         'recent_journal': recent_journal,
         'trade_form': TradeForm(initial={'trade_date': previous_market_day(today), 'expiry': previous_market_day(today), 'symbol': 'SPX'}),
-        'is_weekend': is_weekend,
+        'is_market_closed': is_market_closed,
+        'market_closed_label': market_closed_label(today),
+        'market_holiday_name': market_holiday_name(today),
         'now': timezone.now(),
     }
     return render(request, 'dashboard/index.html', context)
@@ -303,7 +306,7 @@ def session_detail(request, date):
     except ValueError:
         return redirect('session_list')
 
-    if is_weekend_day(session_date):
+    if is_market_closed_day(session_date):
         return render(request, 'journal/session_detail.html', {
             'session': TradingSession(date=session_date),
             'daily_routine': None,
@@ -311,6 +314,8 @@ def session_detail(request, date):
             'total_pnl': Decimal('0'),
             'form': None,
             'market_closed': True,
+            'market_closed_label': market_closed_label(session_date),
+            'market_holiday_name': market_holiday_name(session_date),
         })
 
     session = TradingSession.objects.filter(date=session_date).first()
@@ -356,6 +361,8 @@ def session_detail(request, date):
         'total_pnl': total_pnl,
         'form': form,
         'market_closed': False,
+        'market_closed_label': '',
+        'market_holiday_name': '',
     })
 
 
@@ -371,7 +378,7 @@ def checklist_toggle(request, date, item_id):
     except ValueError:
         return HttpResponse(status=400)
 
-    if is_weekend_day(session_date):
+    if is_market_closed_day(session_date):
         return HttpResponse(status=400)
 
     session = get_object_or_404(TradingSession, date=session_date)
@@ -463,6 +470,7 @@ def _build_calendar_grid(year, month, days_in_month, pad_before, sessions, today
         d = datetime.date(year, month, day_num)
         session = sessions.get(d)
         pnl = session.total_pnl if session else None
+        is_closed = is_market_closed_day(d)
         days.append({
             'date': d,
             'session': session,
@@ -470,6 +478,8 @@ def _build_calendar_grid(year, month, days_in_month, pad_before, sessions, today
             'trade_count': session.trade_count if session else 0,
             'psych_state': session.psychological_state if session else None,
             'is_today': d == today,
+            'is_closed': is_closed,
+            'closed_label': market_holiday_name(d) or market_closed_label(d),
         })
     # Chunk into weeks of 7
     weeks = []
@@ -707,7 +717,7 @@ def import_confirm(request, filename):
         if ibkr_id and Trade.objects.filter(ibkr_trade_id=ibkr_id).exists():
             skipped_count += 1
             continue
-        if is_weekend_day(row['trade_date']):
+        if is_market_closed_day(row['trade_date']):
             error_count += 1
             continue
         try:

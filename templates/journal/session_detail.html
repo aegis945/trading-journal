@@ -12,7 +12,7 @@
     </span>
     <div>
       <h2 class="text-base font-semibold" style="color:var(--text-primary);">Market is closed.</h2>
-      <p class="text-sm mt-1" style="color:var(--text-secondary);">Weekend dates cannot have trading sessions or trades. Enjoy the weekend.</p>
+      <p class="text-sm mt-1" style="color:var(--text-secondary);">{% if market_closed_label == 'Weekend' %}Weekend dates cannot have trading sessions or trades. Enjoy the weekend.{% else %}{{ market_holiday_name }} is a market holiday, so this date cannot have trading sessions or trades.{% endif %}</p>
     </div>
   </div>
 </div>

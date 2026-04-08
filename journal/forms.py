@@ -6,7 +6,7 @@ from django import forms
 from .models import (
     Trade, TradingSession, JournalEntry,
     PreTradeChecklist, PerformanceGoal,
-    OptionType, TradeType, TradeStatus, MarketBias, is_weekend_day,
+    OptionType, TradeType, TradeStatus, MarketBias, is_market_closed_day,
 )
 
 
@@ -72,8 +72,8 @@ class TradeForm(forms.ModelForm):
 
     def clean_trade_date(self):
         trade_date = self.cleaned_data['trade_date']
-        if is_weekend_day(trade_date):
-            raise forms.ValidationError('Trades cannot be logged on weekends.')
+        if is_market_closed_day(trade_date):
+            raise forms.ValidationError('Trades cannot be logged when the market is closed.')
         return trade_date
 
     def save(self, commit=True):

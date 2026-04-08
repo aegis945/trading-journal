@@ -2,6 +2,7 @@ asgiref==3.11.1
 Django==5.2.12
 django-extensions==4.1
 eventkit==1.0.3
+holidays==0.71
 ib-insync==0.9.86
 nest-asyncio==1.6.0
 numpy==2.4.4

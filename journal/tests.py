@@ -109,6 +109,16 @@ class TradingSessionEmptyStateTests(TestCase):
 		self.assertContains(response, 'Market is closed.')
 		self.assertContains(response, 'Enjoy the weekend')
 
+	def test_dashboard_holiday_shows_market_closed_without_creating_session(self):
+		holiday = datetime.date(2026, 12, 25)
+
+		with patch('journal.views.timezone.localdate', return_value=holiday):
+			response = self.client.get(reverse('dashboard'))
+
+		self.assertFalse(TradingSession.objects.filter(date=holiday).exists())
+		self.assertContains(response, 'Market is closed.')
+		self.assertContains(response, 'Christmas Day')
+
 	def test_weekend_session_page_shows_closed_message_and_does_not_create_session(self):
 		saturday = datetime.date(2026, 4, 11)
 
@@ -116,6 +126,14 @@ class TradingSessionEmptyStateTests(TestCase):
 
 		self.assertFalse(TradingSession.objects.filter(date=saturday).exists())
 		self.assertContains(response, 'Weekend dates cannot have trading sessions or trades.')
+
+	def test_holiday_session_page_shows_closed_message_and_does_not_create_session(self):
+		holiday = datetime.date(2026, 12, 25)
+
+		response = self.client.get(reverse('session_detail', args=[holiday.isoformat()]))
+
+		self.assertFalse(TradingSession.objects.filter(date=holiday).exists())
+		self.assertContains(response, 'Christmas Day is a market holiday')
 
 
 class DashboardTagStatsTests(TestCase):
@@ -224,8 +242,31 @@ class TradeListTagFilterTests(TestCase):
 		self.assertFalse(form.is_valid())
 		self.assertIn('trade_date', form.errors)
 
+	def test_trade_form_rejects_market_holiday_trade_date(self):
+		form = TradeForm(data={
+			'trade_date': '2026-12-25',
+			'symbol': 'SPX',
+			'option_type': OptionType.CALL,
+			'trade_type': TradeType.LONG_CALL,
+			'strike': '5000',
+			'expiry': '2026-12-25',
+			'quantity': 1,
+			'entry_price': '5.00',
+			'entry_time': '09:30',
+			'status': TradeStatus.OPEN,
+		})
+
+		self.assertFalse(form.is_valid())
+		self.assertIn('trade_date', form.errors)
+
 	def test_calendar_weekend_cells_are_not_clickable(self):
 		response = self.client.get(reverse('calendar'), {'year': 2026, 'month': 4})
 
 		self.assertNotContains(response, reverse('session_detail', args=['2026-04-11']))
-		self.assertContains(response, 'Closed')
+		self.assertContains(response, 'Weekend')
+
+	def test_calendar_holiday_cells_are_not_clickable(self):
+		response = self.client.get(reverse('calendar'), {'year': 2026, 'month': 12})
+
+		self.assertNotContains(response, reverse('session_detail', args=['2026-12-25']))
+		self.assertContains(response, 'Christmas Day')

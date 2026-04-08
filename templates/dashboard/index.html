@@ -70,7 +70,7 @@
   <!-- ══════════════════════════════════════════════
        ROW 2 — Session + Checklist
   ══════════════════════════════════════════════ -->
-  {% if is_weekend %}
+  {% if is_market_closed %}
   <div class="card p-6 animate-in" style="animation-delay:60ms;">
     <div class="flex items-start gap-3">
       <span class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:var(--accent-glow);color:var(--accent)">
@@ -78,7 +78,7 @@
       </span>
       <div>
         <h2 class="text-base font-semibold" style="color:var(--text-primary);">Market is closed.</h2>
-        <p class="text-sm mt-1" style="color:var(--text-secondary);">No session to fill out today. Enjoy the weekend and come back on the next trading day.</p>
+        <p class="text-sm mt-1" style="color:var(--text-secondary);">No session to fill out today. {% if market_closed_label == 'Weekend' %}Enjoy the weekend and come back on the next trading day.{% else %}The market is closed for {{ market_holiday_name }}. Enjoy the time off.{% endif %}</p>
       </div>
     </div>
   </div>
