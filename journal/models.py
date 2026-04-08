@@ -511,12 +511,12 @@ class JournalEntry(models.Model):
 class PerformanceGoal(models.Model):
     title         = models.CharField(max_length=200)
     description   = models.TextField(blank=True)
-    metric        = models.CharField(max_length=20, choices=GoalMetric.choices)
-    target_value  = models.DecimalField(max_digits=12, decimal_places=2)
-    current_value = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
+    metric        = models.CharField(max_length=20, choices=GoalMetric.choices, null=True, blank=True)
+    target_value  = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    current_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     period        = models.CharField(max_length=12, choices=GoalPeriod.choices)
     start_date    = models.DateField()
-    end_date      = models.DateField()
+    end_date      = models.DateField(null=True, blank=True)
     status        = models.CharField(
         max_length=10, choices=GoalStatus.choices, default=GoalStatus.ACTIVE,
     )
@@ -529,7 +529,29 @@ class PerformanceGoal(models.Model):
 
     @property
     def progress_percent(self):
-        if self.target_value == 0:
+        if self.target_value in (None, 0) or self.current_value is None:
             return 0
         pct = float(self.current_value) / float(self.target_value) * 100
         return min(round(pct, 1), 100.0)
+
+    @property
+    def metric_display(self):
+        if not self.metric:
+            return 'Process Goal'
+        return self.get_metric_display()
+
+    @property
+    def period_display(self):
+        return self.get_period_display()
+
+    @property
+    def is_quantitative(self):
+        return bool(self.metric and self.target_value is not None)
+
+    @property
+    def is_met(self):
+        if self.status == GoalStatus.ACHIEVED:
+            return True
+        if not self.is_quantitative or self.current_value is None:
+            return False
+        return self.current_value >= self.target_value

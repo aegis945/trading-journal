@@ -162,18 +162,51 @@ class PreTradeChecklistForm(forms.ModelForm):
 class PerformanceGoalForm(forms.ModelForm):
     class Meta:
         model  = PerformanceGoal
-        fields = '__all__'
+        fields = [
+            'title', 'description', 'metric', 'target_value', 'current_value',
+            'period', 'start_date', 'end_date', 'status',
+        ]
         widgets = {
-            'title':         forms.TextInput(attrs={'class': _INPUT_CLASSES}),
-            'description':   forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '2'}),
+            'title':         forms.TextInput(attrs={'class': _INPUT_CLASSES, 'placeholder': 'Follow the rules'}),
+            'description':   forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3', 'placeholder': 'Describe what success looks like for this goal.'}),
             'metric':        forms.Select(attrs={'class': _SELECT_CLASSES}),
-            'target_value':  forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01'}),
-            'current_value': forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01'}),
+            'target_value':  forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01', 'placeholder': 'Optional for process goals'}),
+            'current_value': forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01', 'placeholder': 'Optional for process goals'}),
             'period':        forms.Select(attrs={'class': _SELECT_CLASSES}),
             'start_date':    forms.DateInput(attrs={'class': _INPUT_CLASSES, 'type': 'date'}),
             'end_date':      forms.DateInput(attrs={'class': _INPUT_CLASSES, 'type': 'date'}),
             'status':        forms.Select(attrs={'class': _SELECT_CLASSES}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['metric'].required = False
+        self.fields['target_value'].required = False
+        self.fields['current_value'].required = False
+        self.fields['end_date'].required = False
+        self.fields['metric'].choices = [('', 'Process goal (no metric)')] + list(self.fields['metric'].choices)
+        self.fields['metric'].help_text = 'Leave blank for goals like "Follow the rules" or "Stay patient".'
+        self.fields['target_value'].help_text = 'Use only for measurable goals like win rate, total P&L, or trade count.'
+        self.fields['current_value'].help_text = 'Optional progress value for measurable goals.'
+        self.fields['end_date'].help_text = 'Optional. Leave blank for open-ended goals.'
+        self.fields['title'].label = 'Goal'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        metric = cleaned_data.get('metric')
+        target_value = cleaned_data.get('target_value')
+        current_value = cleaned_data.get('current_value')
+
+        if metric and target_value is None:
+            self.add_error('target_value', 'Set a target for measurable goals.')
+
+        if not metric:
+            cleaned_data['target_value'] = None
+            cleaned_data['current_value'] = None
+        elif target_value is None and current_value is not None:
+            self.add_error('target_value', 'Add a target before tracking current progress.')
+
+        return cleaned_data
 
 
 class AppPreferencesForm(forms.ModelForm):

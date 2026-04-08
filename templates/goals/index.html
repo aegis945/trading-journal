@@ -23,8 +23,11 @@
   <div class="card p-5 animate-in" style="animation-delay:{{ forloop.counter0 }}0ms">
     <div class="flex items-start justify-between mb-4">
       <div>
-        <p class="text-sm font-medium" style="color:var(--text-primary)">{{ goal.metric_display }}</p>
-        <p class="text-xs mt-0.5" style="color:var(--text-secondary)">{{ goal.period_display }} — target {{ goal.target_value }}</p>
+        <p class="text-sm font-medium" style="color:var(--text-primary)">{{ goal.title }}</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="text-[11px] px-2 py-0.5 rounded-full" style="background:var(--accent-glow);color:var(--accent)">{{ goal.metric_display }}</span>
+          <span class="text-xs" style="color:var(--text-secondary)">{{ goal.period_display }}</span>
+        </div>
       </div>
       <div class="flex gap-3 text-xs">
         <a href="{% url 'goal_edit' goal.pk %}" class="transition-colors"
@@ -35,11 +38,14 @@
           onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">Delete</a>
       </div>
     </div>
-    {% if goal.current_value is not None %}
+    {% if goal.description %}
+    <p class="text-sm mb-4" style="color:var(--text-secondary)">{{ goal.description }}</p>
+    {% endif %}
+    {% if goal.is_quantitative and goal.current_value is not None %}
     <div class="flex items-center gap-3">
       <div class="flex-1 rounded-full" style="height:6px;background:var(--bg-base)">
         <div class="rounded-full transition-all duration-500"
-          style="height:6px;width:{{ goal.progress_pct|default:0|floatformat:0 }}%;background:{% if goal.is_met %}var(--profit){% else %}var(--accent){% endif %}"></div>
+          style="height:6px;width:{{ goal.progress_percent|default:0|floatformat:0 }}%;background:{% if goal.is_met %}var(--profit){% else %}var(--accent){% endif %}"></div>
       </div>
       <span class="mono text-xs whitespace-nowrap" style="color:var(--text-secondary)">
         {{ goal.current_value|floatformat:2 }} / {{ goal.target_value }}
@@ -48,9 +54,11 @@
       <span class="text-xs font-medium" style="color:var(--profit)">✓ Met</span>
       {% endif %}
     </div>
-    {% endif %}
-    {% if goal.notes %}
-    <p class="mt-3 text-xs" style="color:var(--text-muted)">{{ goal.notes }}</p>
+    {% else %}
+    <div class="text-xs px-3 py-2 rounded-lg inline-flex items-center gap-2" style="background:var(--bg-elevated);color:var(--text-secondary)">
+      <span>Status:</span>
+      <span style="color:{% if goal.status == 'ACHIEVED' %}var(--profit){% elif goal.status == 'MISSED' %}var(--loss){% else %}var(--text-primary){% endif %}">{{ goal.get_status_display }}</span>
+    </div>
     {% endif %}
   </div>
   {% endfor %}

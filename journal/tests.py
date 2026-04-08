@@ -6,8 +6,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .forms import TradeForm, TradingSessionForm
-from .models import AppPreferences, OptionType, Trade, TradeStatus, TradeType, TradingSession
+from .forms import PerformanceGoalForm, TradeForm, TradingSessionForm
+from .models import AppPreferences, OptionType, PerformanceGoal, Trade, TradeStatus, TradeType, TradingSession
 from .templatetags.journal_extras import pnl_str
 from .views import _compute_tag_stats
 
@@ -329,3 +329,72 @@ class DisplayCurrencyPreferenceTests(TestCase):
 
 		self.assertEqual(preferences.convert_pnl_value(Decimal('100')), Decimal('91.00'))
 		mocked_fetch_rate.assert_called_once()
+
+
+class PerformanceGoalTests(TestCase):
+	def test_process_goal_form_allows_non_numeric_goal(self):
+		form = PerformanceGoalForm(data={
+			'title': 'Follow the rules',
+			'description': 'Execute only valid setups and skip revenge trades.',
+			'metric': '',
+			'target_value': '',
+			'current_value': '',
+			'period': 'WEEKLY',
+			'start_date': '2026-04-06',
+			'end_date': '',
+			'status': 'ACTIVE',
+		})
+
+		self.assertTrue(form.is_valid(), form.errors)
+		goal = form.save()
+		self.assertIsNone(goal.metric)
+		self.assertIsNone(goal.target_value)
+		self.assertIsNone(goal.current_value)
+		self.assertIsNone(goal.end_date)
+
+	def test_goal_form_allows_missing_end_date_for_quantitative_goal(self):
+		form = PerformanceGoalForm(data={
+			'title': 'Reach 10 trades',
+			'description': '',
+			'metric': 'TRADE_COUNT',
+			'target_value': '10',
+			'current_value': '',
+			'period': 'MONTHLY',
+			'start_date': '2026-04-01',
+			'end_date': '',
+			'status': 'ACTIVE',
+		})
+
+		self.assertTrue(form.is_valid(), form.errors)
+
+	def test_quantitative_goal_still_requires_target(self):
+		form = PerformanceGoalForm(data={
+			'title': 'Increase win rate',
+			'description': '',
+			'metric': 'WIN_RATE',
+			'target_value': '',
+			'current_value': '65',
+			'period': 'MONTHLY',
+			'start_date': '2026-04-01',
+			'end_date': '2026-04-30',
+			'status': 'ACTIVE',
+		})
+
+		self.assertFalse(form.is_valid())
+		self.assertIn('target_value', form.errors)
+
+	def test_goals_page_renders_process_goal_without_numeric_target(self):
+		PerformanceGoal.objects.create(
+			title='Follow the rules',
+			description='Take only valid setups.',
+			period='WEEKLY',
+			start_date=datetime.date(2026, 4, 6),
+			end_date=datetime.date(2026, 4, 10),
+			status='ACTIVE',
+		)
+
+		response = self.client.get(reverse('goals'))
+
+		self.assertContains(response, 'Follow the rules')
+		self.assertContains(response, 'Process Goal')
+		self.assertNotContains(response, 'target None')

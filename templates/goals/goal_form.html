@@ -6,15 +6,82 @@
 <div class="max-w-lg card p-6 animate-in">
   <form method="POST" class="space-y-4">
     {% csrf_token %}
-    {% for field in form %}
     <div>
-      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ field.label }}</label>
-      {{ field }}
-      {% if field.errors %}
-      <p class="mt-1 text-xs" style="color:var(--loss)">{{ field.errors|join:", " }}</p>
+      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.title.label }}</label>
+      {{ form.title }}
+      <p class="mt-1 text-xs" style="color:var(--text-muted)">Examples: Follow the rules, Wait for A+ setups, Avoid revenge trades.</p>
+      {% if form.title.errors %}
+      <p class="mt-1 text-xs" style="color:var(--loss)">{{ form.title.errors|join:", " }}</p>
       {% endif %}
     </div>
-    {% endfor %}
+
+    <div>
+      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.description.label }}</label>
+      {{ form.description }}
+      {% if form.description.errors %}
+      <p class="mt-1 text-xs" style="color:var(--loss)">{{ form.description.errors|join:", " }}</p>
+      {% endif %}
+    </div>
+
+    <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
+      <p class="text-sm font-medium mb-1" style="color:var(--text-primary)">Optional measurable target</p>
+      <p class="text-xs mb-3" style="color:var(--text-secondary)">Leave these blank for process goals. Use them only if this goal should track a specific number.</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.metric.label }}</label>
+          {{ form.metric }}
+          {% if form.metric.help_text %}<p class="mt-1 text-xs" style="color:var(--text-muted)">{{ form.metric.help_text }}</p>{% endif %}
+          {% if form.metric.errors %}
+          <p class="mt-1 text-xs" style="color:var(--loss)">{{ form.metric.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.target_value.label }}</label>
+            {{ form.target_value }}
+            {% if form.target_value.help_text %}<p class="mt-1 text-xs" style="color:var(--text-muted)">{{ form.target_value.help_text }}</p>{% endif %}
+            {% if form.target_value.errors %}
+            <p class="mt-1 text-xs" style="color:var(--loss)">{{ form.target_value.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.current_value.label }}</label>
+            {{ form.current_value }}
+            {% if form.current_value.help_text %}<p class="mt-1 text-xs" style="color:var(--text-muted)">{{ form.current_value.help_text }}</p>{% endif %}
+            {% if form.current_value.errors %}
+            <p class="mt-1 text-xs" style="color:var(--loss)">{{ form.current_value.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.period.label }}</label>
+        {{ form.period }}
+        {% if form.period.errors %}<p class="mt-1 text-xs" style="color:var(--loss)">{{ form.period.errors|join:", " }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.start_date.label }}</label>
+        {{ form.start_date }}
+        {% if form.start_date.errors %}<p class="mt-1 text-xs" style="color:var(--loss)">{{ form.start_date.errors|join:", " }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.end_date.label }}</label>
+        {{ form.end_date }}
+        {% if form.end_date.errors %}<p class="mt-1 text-xs" style="color:var(--loss)">{{ form.end_date.errors|join:", " }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.status.label }}</label>
+      {{ form.status }}
+      {% if form.status.errors %}<p class="mt-1 text-xs" style="color:var(--loss)">{{ form.status.errors|join:", " }}</p>{% endif %}
+    </div>
+
     <div class="flex gap-3 pt-2">
       <a href="{% url 'goals' %}"
         class="px-4 py-2 text-sm rounded-lg transition-colors"
