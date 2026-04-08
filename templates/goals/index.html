@@ -13,9 +13,10 @@
 
 <div class="space-y-4 max-w-2xl">
   {% if not goals %}
-  <div class="card p-8 text-center animate-in">
+  <div class="py-16 text-center card animate-in">
     <i data-lucide="target" class="mx-auto mb-3" style="width:32px;height:32px;opacity:0.3"></i>
-    <p class="text-sm" style="color:var(--text-muted)">No goals set yet.</p>
+    <p class="text-sm mb-2" style="color:var(--text-muted)">No goals yet.</p>
+    <a href="{% url 'goal_new' %}" class="text-sm" style="color:var(--accent)">Write your first one &rarr;</a>
   </div>
   {% endif %}
   {% for goal in goals %}
