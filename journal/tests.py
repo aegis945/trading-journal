@@ -495,6 +495,46 @@ class PerformanceGoalTests(TestCase):
 		self.assertEqual(metrics[ProcessMetric.SESSION_PREP], 100.0)
 		self.assertEqual(metrics[ProcessMetric.SESSION_REVIEW], 100.0)
 		self.assertEqual(metrics[ProcessMetric.PROCESS_SCORE], 100.0)
+		self.assertEqual(metrics['trading_day_count'], 1)
+
+	def test_process_metrics_ignore_sessions_without_trades(self):
+		trade_date = datetime.date(2026, 4, 8)
+		TradingSession.objects.create(
+			date=trade_date - datetime.timedelta(days=1),
+			market_bias='BULLISH',
+			psychological_state=4,
+			market_open_notes='Planned but skipped the session.',
+			session_notes='No trades were taken.',
+		)
+		session = TradingSession.objects.create(
+			date=trade_date,
+			market_bias='BULLISH',
+			psychological_state=4,
+			market_open_notes='Ready for the open.',
+			session_notes='Reviewed the active session.',
+		)
+		Trade.objects.create(
+			session=session,
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 0),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.FOLLOWED,
+		)
+
+		metrics = calculate_process_metrics(trade_date - datetime.timedelta(days=1), trade_date)
+
+		self.assertEqual(metrics[ProcessMetric.SESSION_PREP], 100.0)
+		self.assertEqual(metrics[ProcessMetric.SESSION_REVIEW], 100.0)
+		self.assertEqual(metrics['trading_day_count'], 1)
 
 	def test_process_goal_form_allows_non_numeric_goal(self):
 		form = PerformanceGoalForm(data={
@@ -810,6 +850,7 @@ class WeeklyReviewTests(TestCase):
 		self.assertContains(response, '+$200.00')
 		self.assertContains(response, 'Process Score')
 		self.assertContains(response, '100.0%')
+		self.assertContains(response, '1/1')
 		self.assertContains(response, 'Opening drive')
 		self.assertContains(response, 'Stayed patient and only took one clean setup.')
 		self.assertContains(response, 'Weekly lesson')

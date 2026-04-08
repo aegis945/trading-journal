@@ -632,7 +632,12 @@ class PerformanceGoal(models.Model):
 
 
 def calculate_process_metrics(start_date, end_date):
-    sessions = list(TradingSession.objects.filter(date__range=(start_date, end_date)))
+    sessions = list(
+        TradingSession.objects.filter(
+            date__range=(start_date, end_date),
+            trades__trade_date__range=(start_date, end_date),
+        ).distinct()
+    )
     session_count = len(sessions)
     session_prep_completed = sum(1 for session in sessions if session.is_pre_market_complete)
     session_review_completed = sum(1 for session in sessions if session.has_post_session_reflection)
@@ -663,6 +668,7 @@ def calculate_process_metrics(start_date, end_date):
         ProcessMetric.SESSION_PREP: session_prep_rate,
         ProcessMetric.SESSION_REVIEW: session_review_rate,
         'session_count': session_count,
+        'trading_day_count': session_count,
         'reviewed_trade_count': reviewed_trade_count,
         'session_prep_completed': session_prep_completed,
         'session_review_completed': session_review_completed,

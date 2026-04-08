@@ -114,6 +114,7 @@ def performance_review(request):
             'avg_rr': avg_rr,
             'process_score': process_metrics[ProcessMetric.PROCESS_SCORE],
             'rule_follow_rate': followed_rate,
+            'trading_day_count': process_metrics['trading_day_count'],
             'reviewed_trade_count': reviewed_count,
             'journal_entries': journal_entries.count(),
             'session_prep_completed': session_prep_completed,

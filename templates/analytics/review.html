@@ -87,13 +87,13 @@
         </div>
         <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
           <p style="color:var(--text-muted)">Session Prep Complete</p>
-          <p class="mono text-lg mt-1" style="color:var(--text-primary)">{{ stats.session_prep_completed }}/{{ session_rows|length }}</p>
-          <p class="text-xs mt-1" style="color:var(--text-secondary)">Bias, mindset, and open notes filled</p>
+          <p class="mono text-lg mt-1" style="color:var(--text-primary)">{{ stats.session_prep_completed }}/{{ stats.trading_day_count }}</p>
+          <p class="text-xs mt-1" style="color:var(--text-secondary)">Bias, mindset, and open notes filled on trading days</p>
         </div>
         <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
           <p style="color:var(--text-muted)">Post-Session Reflection</p>
-          <p class="mono text-lg mt-1" style="color:var(--text-primary)">{{ stats.session_reflections_completed }}/{{ session_rows|length }}</p>
-          <p class="text-xs mt-1" style="color:var(--text-secondary)">Session notes or lessons logged</p>
+          <p class="mono text-lg mt-1" style="color:var(--text-primary)">{{ stats.session_reflections_completed }}/{{ stats.trading_day_count }}</p>
+          <p class="text-xs mt-1" style="color:var(--text-secondary)">Session notes or lessons logged on trading days</p>
         </div>
         <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
           <p style="color:var(--text-muted)">Trade-Linked Journal</p>
