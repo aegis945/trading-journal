@@ -179,12 +179,17 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule Review</label>
-              {{ form.rule_review }}
+              <select name="rule_review" id="id_rule_review"
+                      class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                      x-model="ruleReview">
+                {% for value, label in form.rule_review.field.choices %}
+                <option value="{{ value }}" {% if form.rule_review.value == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
             </div>
-            <div>
+            <div x-show="ruleReview === 'BROKE'" style="display:none">
               <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule-break tags</label>
               {{ form.rule_break_tags_text }}
-              <p class="text-xs mt-1" style="color:var(--text-muted)">Only needed when the trade broke your rules.</p>
               {% if rule_break_tag_options %}
               <div class="flex flex-wrap gap-2 mt-2">
                 {% for tag in rule_break_tag_options %}
@@ -201,7 +206,7 @@
               {% endif %}
             </div>
           </div>
-          <div>
+          <div x-show="ruleReview === 'BROKE'" style="display:none">
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule-break notes</label>
             {{ form.rule_break_notes }}
           </div>
@@ -321,6 +326,7 @@
   function tradeForm() {
     return {
       showDeleteScreenshotConfirm: false,
+      ruleReview: '{{ form.rule_review.value|default:"" }}',
       entryPrice: {{ form.entry_price.value|default:'0' }},
       exitPrice:  {{ form.exit_price.value|default:'null' }},
       stopLoss:   {{ form.planned_stop_loss.value|default:'null' }},

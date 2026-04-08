@@ -74,27 +74,39 @@ HTMX modal for quick trade entry from the topbar "+ Trade" button.
         </div>
       </div>
       <div>{{ form.strategy_tags_text.label_tag }}{{ form.strategy_tags_text }}</div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>{{ form.rule_review.label_tag }}{{ form.rule_review }}</div>
-        <div>
-          {{ form.rule_break_tags_text.label_tag }}{{ form.rule_break_tags_text }}
-          {% if rule_break_tag_options %}
-          <div class="flex flex-wrap gap-2 mt-2">
-            {% for tag in rule_break_tag_options %}
-            <button type="button"
-                    class="text-xs px-2.5 py-1 rounded-full transition-colors"
-                    style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
-                    onmouseover="this.style.color='var(--text-primary)'"
-                    onmouseout="this.style.color='var(--text-secondary)'"
-                    onclick="appendRuleBreakTag('id_rule_break_tags_text', '{{ tag|escapejs }}')">
-              {{ tag }}
-            </button>
+      <div x-data="{ ruleReview: '{{ form.rule_review.value|default:"" }}' }">
+        <div class="mb-3">
+          <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule Review</label>
+          <select name="rule_review" id="id_rule_review"
+                  class="w-full bg-[#1e263a] border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                  x-model="ruleReview">
+            {% for value, label in form.rule_review.field.choices %}
+            <option value="{{ value }}" {% if form.rule_review.value == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
+          </select>
+        </div>
+        <div x-show="ruleReview === 'BROKE'" style="display:none" class="grid grid-cols-1 gap-3">
+          <div>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule-break tags</label>
+            {{ form.rule_break_tags_text }}
+            {% if rule_break_tag_options %}
+            <div class="flex flex-wrap gap-2 mt-2">
+              {% for tag in rule_break_tag_options %}
+              <button type="button"
+                      class="text-xs px-2.5 py-1 rounded-full transition-colors"
+                      style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+                      onmouseover="this.style.color='var(--text-primary)'"
+                      onmouseout="this.style.color='var(--text-secondary)'"
+                      onclick="appendRuleBreakTag('id_rule_break_tags_text', '{{ tag|escapejs }}')">
+                {{ tag }}
+              </button>
+              {% endfor %}
+            </div>
+            {% endif %}
           </div>
-          {% endif %}
+          <div>{{ form.rule_break_notes.label_tag }}{{ form.rule_break_notes }}</div>
         </div>
       </div>
-      <div>{{ form.rule_break_notes.label_tag }}{{ form.rule_break_notes }}</div>
       <div>
         {{ form.ta_screenshot.label_tag }}
         {{ form.ta_screenshot }}
