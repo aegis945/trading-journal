@@ -678,6 +678,7 @@ class WeeklyReviewTests(TestCase):
 		self.assertContains(response, 'Opening drive')
 		self.assertContains(response, 'Stayed patient and only took one clean setup.')
 		self.assertContains(response, 'Weekly lesson')
+		self.assertContains(response, 'Best 3 Trades')
 		self.assertContains(response, 'No losing trades yet this week.')
 
 	def test_weekly_review_defaults_to_latest_activity_week(self):
@@ -730,6 +731,54 @@ class WeeklyReviewTests(TestCase):
 
 		response = self.client.get(reverse('performance_review'), {'week': '2026-04-08'})
 
-		self.assertContains(response, 'Best Trade')
+		self.assertContains(response, 'Best 3 Trades')
 		self.assertContains(response, 'Profited from the opening flush.')
 		self.assertContains(response, 'No losing trades yet this week.')
+
+	def test_weekly_review_shows_top_three_best_and_worst_trades(self):
+		trade_date = datetime.date(2026, 4, 8)
+		for index, exit_price in enumerate(['8.00', '7.00', '6.00', '5.50'], start=1):
+			Trade.objects.create(
+				trade_date=trade_date,
+				symbol='SPX',
+				option_type=OptionType.CALL,
+				strike=f'500{index}',
+				expiry=trade_date,
+				quantity=1,
+				entry_price='5.00',
+				exit_price=exit_price,
+				entry_time=datetime.time(9, 30 + index),
+				exit_time=datetime.time(10, 0 + index),
+				trade_type=TradeType.LONG_CALL,
+				status=TradeStatus.CLOSED,
+				trade_notes=f'Winning trade {index}',
+			)
+		for index, exit_price in enumerate(['2.00', '3.00', '4.00', '4.50'], start=1):
+			Trade.objects.create(
+				trade_date=trade_date,
+				symbol='QQQ',
+				option_type=OptionType.PUT,
+				strike=f'430{index}',
+				expiry=trade_date,
+				quantity=1,
+				entry_price='5.00',
+				exit_price=exit_price,
+				entry_time=datetime.time(11, 0 + index),
+				exit_time=datetime.time(11, 20 + index),
+				trade_type=TradeType.LONG_PUT,
+				status=TradeStatus.CLOSED,
+				rule_break_notes=f'Losing trade {index}',
+			)
+
+		response = self.client.get(reverse('performance_review'), {'week': '2026-04-08'})
+
+		self.assertContains(response, 'Best 3 Trades')
+		self.assertContains(response, 'Worst 3 Trades')
+		self.assertContains(response, 'Winning trade 1')
+		self.assertContains(response, 'Winning trade 2')
+		self.assertContains(response, 'Winning trade 3')
+		self.assertNotContains(response, 'Winning trade 4')
+		self.assertContains(response, 'Losing trade 1')
+		self.assertContains(response, 'Losing trade 2')
+		self.assertContains(response, 'Losing trade 3')
+		self.assertNotContains(response, 'Losing trade 4')

@@ -46,8 +46,12 @@ def performance_review(request):
     followed_count = reviewed_trades.filter(rule_review=RuleReview.FOLLOWED).count()
     followed_rate = round(followed_count / reviewed_count * 100, 1) if reviewed_count else None
 
-    best_trade = closed_week_trades.filter(pnl__gt=0).order_by('-pnl', '-trade_date', '-entry_time').first()
-    worst_trade = closed_week_trades.filter(pnl__lt=0).order_by('pnl', '-trade_date', '-entry_time').first()
+    best_trades = list(
+        closed_week_trades.filter(pnl__gt=0).order_by('-pnl', '-trade_date', '-entry_time')[:3]
+    )
+    worst_trades = list(
+        closed_week_trades.filter(pnl__lt=0).order_by('pnl', '-trade_date', '-entry_time')[:3]
+    )
 
     rule_break_counter = defaultdict(int)
     strategy_counter = defaultdict(int)
@@ -102,8 +106,8 @@ def performance_review(request):
             'session_prep_completed': session_prep_completed,
             'session_reflections_completed': session_reflections_completed,
         },
-        'best_trade': best_trade,
-        'worst_trade': worst_trade,
+        'best_trades': best_trades,
+        'worst_trades': worst_trades,
         'top_rule_breaks': top_rule_breaks,
         'top_strategy_tags': top_strategy_tags,
         'session_rows': session_rows,

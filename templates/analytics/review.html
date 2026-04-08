@@ -155,31 +155,43 @@
       </div>
       <div class="space-y-3">
         <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
-          <p class="text-xs uppercase tracking-widest mb-1" style="color:var(--text-muted)">Best Trade</p>
-          {% if best_trade %}
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <p class="font-semibold" style="color:var(--text-primary)">{{ best_trade.symbol }} {{ best_trade.option_type }} {{ best_trade.strike }}</p>
-              <p class="text-xs mt-1" style="color:var(--text-secondary)">{{ best_trade.trade_date }} · {{ best_trade.get_trade_type_display }}</p>
+          <p class="text-xs uppercase tracking-widest mb-3" style="color:var(--text-muted)">Best 3 Trades</p>
+          {% if best_trades %}
+          <div class="space-y-3">
+            {% for trade in best_trades %}
+            <div class="{% if not forloop.last %}pb-3{% endif %}" {% if not forloop.last %}style="border-bottom:1px solid var(--border)"{% endif %}>
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="font-semibold" style="color:var(--text-primary)">{{ forloop.counter }}. {{ trade.symbol }} {{ trade.option_type }} {{ trade.strike }}</p>
+                  <p class="text-xs mt-1" style="color:var(--text-secondary)">{{ trade.trade_date }} · {{ trade.get_trade_type_display }}</p>
+                </div>
+                <span class="mono text-base font-semibold" style="color:var(--profit)">{{ trade.pnl|pnl_str }}</span>
+              </div>
+              {% if trade.trade_notes %}<p class="text-sm mt-3" style="color:var(--text-secondary)">{{ trade.trade_notes|truncatechars:140 }}</p>{% endif %}
             </div>
-            <span class="mono text-base font-semibold" style="color:var(--profit)">{{ best_trade.pnl|pnl_str }}</span>
+            {% endfor %}
           </div>
-          {% if best_trade.trade_notes %}<p class="text-sm mt-3" style="color:var(--text-secondary)">{{ best_trade.trade_notes|truncatechars:140 }}</p>{% endif %}
           {% else %}
-          <p style="color:var(--text-secondary)">No closed trades yet this week.</p>
+          <p style="color:var(--text-secondary)">No winning trades yet this week.</p>
           {% endif %}
         </div>
         <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
-          <p class="text-xs uppercase tracking-widest mb-1" style="color:var(--text-muted)">Worst Trade</p>
-          {% if worst_trade %}
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <p class="font-semibold" style="color:var(--text-primary)">{{ worst_trade.symbol }} {{ worst_trade.option_type }} {{ worst_trade.strike }}</p>
-              <p class="text-xs mt-1" style="color:var(--text-secondary)">{{ worst_trade.trade_date }} · {{ worst_trade.get_trade_type_display }}</p>
+          <p class="text-xs uppercase tracking-widest mb-3" style="color:var(--text-muted)">Worst 3 Trades</p>
+          {% if worst_trades %}
+          <div class="space-y-3">
+            {% for trade in worst_trades %}
+            <div class="{% if not forloop.last %}pb-3{% endif %}" {% if not forloop.last %}style="border-bottom:1px solid var(--border)"{% endif %}>
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <p class="font-semibold" style="color:var(--text-primary)">{{ forloop.counter }}. {{ trade.symbol }} {{ trade.option_type }} {{ trade.strike }}</p>
+                  <p class="text-xs mt-1" style="color:var(--text-secondary)">{{ trade.trade_date }} · {{ trade.get_trade_type_display }}</p>
+                </div>
+                <span class="mono text-base font-semibold" style="color:var(--loss)">{{ trade.pnl|pnl_str }}</span>
+              </div>
+              {% if trade.rule_break_notes %}<p class="text-sm mt-3" style="color:var(--text-secondary)">{{ trade.rule_break_notes|truncatechars:140 }}</p>{% elif trade.exit_notes %}<p class="text-sm mt-3" style="color:var(--text-secondary)">{{ trade.exit_notes|truncatechars:140 }}</p>{% endif %}
             </div>
-            <span class="mono text-base font-semibold" style="color:var(--loss)">{{ worst_trade.pnl|pnl_str }}</span>
+            {% endfor %}
           </div>
-          {% if worst_trade.rule_break_notes %}<p class="text-sm mt-3" style="color:var(--text-secondary)">{{ worst_trade.rule_break_notes|truncatechars:140 }}</p>{% endif %}
           {% else %}
           <p style="color:var(--text-secondary)">No losing trades yet this week.</p>
           {% endif %}
