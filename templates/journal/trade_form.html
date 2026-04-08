@@ -232,14 +232,48 @@
                     <i data-lucide="image" style="width:12px;height:12px"></i> Open image
                   </a>
                 </div>
-                <button type="submit"
-                        form="delete-screenshot-form"
+                <button type="button"
                         class="inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg transition-colors"
                         style="background:rgba(244,63,94,0.08);color:var(--loss);border:1px solid rgba(244,63,94,0.18)"
-                        onclick="return confirm('Delete this screenshot? You can upload a new one right after.');">
+                        @click="showDeleteScreenshotConfirm = true">
                   <i data-lucide="trash-2" style="width:12px;height:12px"></i>
                   Delete screenshot
                 </button>
+              </div>
+
+                  <div x-show="showDeleteScreenshotConfirm"
+                   x-transition.opacity.duration.150ms
+                   class="mt-4 rounded-xl border p-4"
+                    style="display:none;background:rgba(244,63,94,0.06);border-color:rgba(244,63,94,0.18)">
+                <div class="flex items-start gap-3">
+                  <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style="background:rgba(244,63,94,0.12);color:var(--loss)">
+                    <i data-lucide="triangle-alert" style="width:14px;height:14px"></i>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium" style="color:var(--text-primary)">Delete this screenshot?</p>
+                    <p class="text-xs mt-1" style="color:var(--text-secondary)">The image will be removed right away, and you can upload a replacement before saving any other trade changes.</p>
+                    <div class="mt-3 flex items-center gap-2">
+                      <button type="submit"
+                              form="delete-screenshot-form"
+                              class="inline-flex items-center gap-2 px-3 py-2 text-xs rounded-lg transition-colors"
+                              style="background:var(--loss);color:#fff"
+                              onmouseover="this.style.opacity='0.88'"
+                              onmouseout="this.style.opacity='1'">
+                        <i data-lucide="trash-2" style="width:12px;height:12px"></i>
+                        Yes, delete it
+                      </button>
+                      <button type="button"
+                              class="px-3 py-2 text-xs rounded-lg transition-colors"
+                              style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+                              onmouseover="this.style.color='var(--text-primary)'"
+                              onmouseout="this.style.color='var(--text-secondary)'"
+                              @click="showDeleteScreenshotConfirm = false">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             {% endif %}
@@ -286,6 +320,7 @@
 <script>
   function tradeForm() {
     return {
+      showDeleteScreenshotConfirm: false,
       entryPrice: {{ form.entry_price.value|default:'0' }},
       exitPrice:  {{ form.exit_price.value|default:'null' }},
       stopLoss:   {{ form.planned_stop_loss.value|default:'null' }},
