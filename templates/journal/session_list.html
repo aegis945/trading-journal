@@ -13,12 +13,12 @@
         <th class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">Mindset</th>
         <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">Trades</th>
         <th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider" style="color:var(--text-muted)">P&amp;L</th>
-        <th class="px-4 py-3"></th>
       </tr>
     </thead>
     <tbody>
       {% for session in sessions %}
-      <tr class="transition-colors animate-in" style="border-bottom:1px solid var(--border); animation-delay:{{ forloop.counter0 }}0ms"
+        <tr class="transition-colors animate-in cursor-pointer" style="border-bottom:1px solid var(--border); animation-delay:{{ forloop.counter0 }}0ms"
+          onclick="window.location='{% url 'session_detail' session.date|date:'Y-m-d' %}'"
           onmouseover="this.style.background='var(--bg-elevated)'" onmouseout="this.style.background=''">
         <td class="px-4 py-3 font-medium" style="color:var(--text-primary)">
           {{ session.date|date:"D, N j Y" }}
@@ -42,18 +42,10 @@
           style="color:{% if session.total_pnl > 0 %}var(--profit){% elif session.total_pnl < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
           {% if session.total_pnl != 0 %}{{ session.total_pnl|pnl_str }}{% else %}—{% endif %}
         </td>
-        <td class="px-4 py-3 text-right">
-          <a href="{% url 'session_detail' session.date|date:'Y-m-d' %}"
-            class="text-xs font-medium transition-colors"
-            style="color:var(--accent)"
-            onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">
-            {% if session.is_pre_market_complete %}View{% else %}Review{% endif %} &rarr;
-          </a>
-        </td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="6" class="px-4 py-16 text-center" style="color:var(--text-muted)">
+        <td colspan="5" class="px-4 py-16 text-center" style="color:var(--text-muted)">
           <i data-lucide="calendar-x" class="mx-auto mb-3" style="width:32px;height:32px;opacity:0.4"></i>
           <p class="text-sm">No sessions yet.</p>
         </td>

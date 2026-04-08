@@ -98,14 +98,14 @@
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Exit</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">P&amp;L</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">R:R</th>
-          <th class="px-4 py-3"></th>
         </tr>
       </thead>
       <tbody>
         {% for trade in trades %}
         <tr
-          class="transition-colors {% if trade.status == 'OPEN' %}row-open{% elif trade.pnl %}{% if trade.pnl > 0 %}row-profit{% else %}row-loss{% endif %}{% endif %}"
+          class="transition-colors cursor-pointer {% if trade.status == 'OPEN' %}row-open{% elif trade.pnl %}{% if trade.pnl > 0 %}row-profit{% else %}row-loss{% endif %}{% endif %}"
           style="border-bottom:1px solid var(--border);"
+          onclick="window.location='{% url 'trade_detail' trade.pk %}'"
         >
           <td class="px-4 py-3 mono text-xs" style="color:var(--text-secondary);">{{ trade.trade_date }}</td>
           <td class="px-4 py-3 font-semibold text-sm" style="color:var(--text-primary);">{{ trade.symbol }}</td>
@@ -141,14 +141,10 @@
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-secondary);">
             {% if trade.risk_reward_ratio %}{{ trade.risk_reward_ratio|rr_str }}:1{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
           </td>
-          <td class="px-4 py-3 text-right">
-            <a href="{% url 'trade_detail' trade.pk %}"
-               class="text-xs text-accent hover:underline">View →</a>
-          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="11" class="px-4 py-16 text-center">
+          <td colspan="10" class="px-4 py-16 text-center">
             <div class="flex flex-col items-center gap-3">
               <i data-lucide="inbox" style="width:28px;height:28px;color:var(--text-muted);"></i>
               <p class="text-sm" style="color:var(--text-secondary);">No trades found.</p>
