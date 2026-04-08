@@ -67,8 +67,8 @@
           {{ row.pnl|pnl_str }}
         </td>
         <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.avg_rr|floatformat:2 }}</td>
-        <td class="px-3 py-2 text-right mono" style="color:var(--profit)">${{ row.best|floatformat:2 }}</td>
-        <td class="px-3 py-2 text-right mono" style="color:var(--loss)">${{ row.worst|floatformat:2 }}</td>
+        <td class="px-3 py-2 text-right mono" style="color:var(--profit)">{{ row.best|pnl_str }}</td>
+        <td class="px-3 py-2 text-right mono" style="color:var(--loss)">{{ row.worst|pnl_str }}</td>
       </tr>
       {% endfor %}
     </tbody>

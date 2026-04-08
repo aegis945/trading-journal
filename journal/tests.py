@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -6,7 +7,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import TradeForm, TradingSessionForm
-from .models import OptionType, Trade, TradeStatus, TradeType, TradingSession
+from .models import AppPreferences, OptionType, Trade, TradeStatus, TradeType, TradingSession
+from .templatetags.journal_extras import pnl_str
 from .views import _compute_tag_stats
 
 
@@ -270,3 +272,60 @@ class TradeListTagFilterTests(TestCase):
 
 		self.assertNotContains(response, reverse('session_detail', args=['2026-12-25']))
 		self.assertContains(response, 'Christmas Day')
+
+
+class DisplayCurrencyPreferenceTests(TestCase):
+	@patch('journal.models.AppPreferences.fetch_usd_to_eur_rate', return_value=Decimal('0.9000'))
+	def test_settings_page_updates_display_currency(self, mocked_fetch_rate):
+		response = self.client.post(reverse('settings_index'), {'display_currency': 'EUR'}, follow=True)
+
+		preferences = AppPreferences.objects.get(pk=1)
+
+		self.assertEqual(preferences.display_currency, 'EUR')
+		self.assertEqual(preferences.usd_to_eur_rate, Decimal('0.9000'))
+		self.assertIsNotNone(preferences.exchange_rate_updated_at)
+		mocked_fetch_rate.assert_called_once()
+		self.assertContains(response, 'Display preferences updated.')
+
+	def test_pnl_uses_selected_currency_but_trade_prices_stay_in_dollars(self):
+		preferences = AppPreferences.objects.create(
+			pk=1,
+			display_currency='EUR',
+			usd_to_eur_rate=Decimal('0.9000'),
+			exchange_rate_updated_at=timezone.now(),
+		)
+		preferences.save()
+
+		trade_date = _market_day()
+		trade = Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 15),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+		)
+
+		response = self.client.get(reverse('trade_detail', args=[trade.pk]))
+
+		self.assertEqual(pnl_str(Decimal('200')), '+€180.00')
+		self.assertContains(response, '+€180.00')
+		self.assertContains(response, '$5.00')
+		self.assertContains(response, '$7.00')
+
+	@patch('journal.models.AppPreferences.fetch_usd_to_eur_rate', side_effect=ValueError('service unavailable'))
+	def test_pnl_falls_back_to_saved_rate_when_live_fetch_fails(self, mocked_fetch_rate):
+		preferences = AppPreferences.objects.create(
+			pk=1,
+			display_currency='EUR',
+			usd_to_eur_rate=Decimal('0.9100'),
+		)
+
+		self.assertEqual(preferences.convert_pnl_value(Decimal('100')), Decimal('91.00'))
+		mocked_fetch_rate.assert_called_once()

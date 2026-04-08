@@ -5,7 +5,7 @@ import json
 from django import forms
 from .models import (
     Trade, TradingSession, JournalEntry,
-    PreTradeChecklist, PerformanceGoal,
+    PreTradeChecklist, PerformanceGoal, AppPreferences,
     OptionType, TradeType, TradeStatus, MarketBias, is_market_closed_day,
 )
 
@@ -173,4 +173,16 @@ class PerformanceGoalForm(forms.ModelForm):
             'start_date':    forms.DateInput(attrs={'class': _INPUT_CLASSES, 'type': 'date'}),
             'end_date':      forms.DateInput(attrs={'class': _INPUT_CLASSES, 'type': 'date'}),
             'status':        forms.Select(attrs={'class': _SELECT_CLASSES}),
+        }
+
+
+class AppPreferencesForm(forms.ModelForm):
+    class Meta:
+        model = AppPreferences
+        fields = ['display_currency']
+        widgets = {
+            'display_currency': forms.Select(attrs={
+                'class': f'{_SELECT_CLASSES} h-[42px]',
+                'style': 'background:var(--bg-elevated);',
+            }),
         }

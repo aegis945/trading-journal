@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load journal_extras %}
 {% block title %}Import Preview{% endblock %}
 {% block page_title %}Import Preview{% endblock %}
 {% block content %}
@@ -58,7 +59,7 @@
           <td class="px-3 py-2 text-right mono" style="color:var(--text-secondary)">{{ row.exit_price|default:"-" }}</td>
           <td class="px-3 py-2 text-right mono font-semibold"
             style="color:{% if row.pnl|default:0 > 0 %}var(--profit){% elif row.pnl|default:0 < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
-            {% if row.pnl %}${{ row.pnl|floatformat:2 }}{% else %}-{% endif %}
+            {% if row.pnl %}{{ row.pnl|pnl_str }}{% else %}-{% endif %}
           </td>
           <td class="px-3 py-2 text-right" style="color:var(--text-secondary)">{{ row.status|default:"-" }}</td>
         </tr>

@@ -114,6 +114,19 @@
 {% block extra_scripts %}
 <script>
   const qs = window.location.search;
+  const PNL_CURRENCY_SYMBOL = "{% pnl_currency_symbol %}";
+  const PNL_CONVERSION_RATE = Number("{% pnl_conversion_rate %}");
+
+  function convertPnlValue(value) {
+    return Number(value) * PNL_CONVERSION_RATE;
+  }
+
+  function formatPnlValue(value, decimals = 2) {
+    const converted = convertPnlValue(value);
+    const sign = converted >= 0 ? "+" : "-";
+    return `${sign}${PNL_CURRENCY_SYMBOL}${Math.abs(converted).toFixed(decimals)}`;
+  }
+
   const CHART_DEFAULTS = {
     color: "#94a3b8",
     plugins: {
@@ -163,8 +176,8 @@
         labels: d.labels,
         datasets: [
           {
-            label: "Avg P&L ($)",
-            data: d.avg_pnl,
+            label: `Avg P&L (${PNL_CURRENCY_SYMBOL})`,
+            data: d.avg_pnl.map(convertPnlValue),
             backgroundColor: d.avg_pnl.map((v) =>
               v >= 0 ? "rgba(16,185,129,0.6)" : "rgba(244,63,94,0.6)",
             ),
@@ -210,8 +223,8 @@
         labels: d.data.map((x) => `Mood ${x.state}/5`),
         datasets: [
           {
-            label: "Avg P&L ($)",
-            data: d.data.map((x) => x.avg_pnl),
+            label: `Avg P&L (${PNL_CURRENCY_SYMBOL})`,
+            data: d.data.map((x) => convertPnlValue(x.avg_pnl)),
             backgroundColor: "#3b82f6",
             borderRadius: 4,
             yAxisID: "y",
@@ -252,7 +265,7 @@
         datasets: [
           {
             label: "Trades",
-            data: d.points,
+            data: d.points.map((point) => ({ ...point, y: convertPnlValue(point.y) })),
             backgroundColor: "rgba(59,130,246,0.5)",
             pointRadius: 4,
           },
@@ -270,8 +283,8 @@
         labels: d.labels,
         datasets: [
           {
-            label: "Equity ($)",
-            data: d.equity,
+            label: `Equity (${PNL_CURRENCY_SYMBOL})`,
+            data: d.equity.map(convertPnlValue),
             borderColor: "#10b981",
             backgroundColor: "rgba(16,185,129,0.05)",
             fill: true,
@@ -279,8 +292,8 @@
             pointRadius: 0,
           },
           {
-            label: "Drawdown ($)",
-            data: d.drawdown,
+            label: `Drawdown (${PNL_CURRENCY_SYMBOL})`,
+            data: d.drawdown.map(convertPnlValue),
             borderColor: "#f43f5e",
             backgroundColor: "rgba(244,63,94,0.1)",
             fill: true,
@@ -296,7 +309,7 @@
           ...CHART_DEFAULTS.plugins,
           tooltip: {
             callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,
+              label: (ctx) => `${ctx.dataset.label}: ${formatPnlValue(ctx.parsed.y / PNL_CONVERSION_RATE)}`,
             },
           },
         },
@@ -312,8 +325,8 @@
         labels: d.data.map((x) => `Quality ${x.quality}/5`),
         datasets: [
           {
-            label: "Avg P&L ($)",
-            data: d.data.map((x) => x.avg_pnl),
+            label: `Avg P&L (${PNL_CURRENCY_SYMBOL})`,
+            data: d.data.map((x) => convertPnlValue(x.avg_pnl)),
             backgroundColor: d.data.map((x) =>
               x.avg_pnl >= 0 ? "rgba(16,185,129,0.6)" : "rgba(244,63,94,0.6)",
             ),
@@ -333,7 +346,7 @@
         datasets: [
           {
             label: "Trades",
-            data: d.points,
+            data: d.points.map((point) => ({ ...point, y: convertPnlValue(point.y) })),
             backgroundColor: "rgba(59,130,246,0.5)",
             pointRadius: 4,
           },
@@ -368,7 +381,7 @@
       <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.trades}</td>
       <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.win_rate}%</td>
       <td class="py-2 text-right mono font-semibold" style="color:${r.total_pnl >= 0 ? 'var(--profit)' : 'var(--loss)'}">
-        ${r.total_pnl >= 0 ? "+" : ""}$${r.total_pnl.toFixed(2)}
+        ${formatPnlValue(r.total_pnl)}
       </td>
       <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.avg_rr !== null ? r.avg_rr : "—"}</td>
     </tr>

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     TradingSession, Trade, PreTradeChecklist,
-    DailyRoutine, JournalEntry, PerformanceGoal,
+    DailyRoutine, JournalEntry, PerformanceGoal, AppPreferences,
 )
 
 
@@ -56,3 +56,8 @@ class PerformanceGoalAdmin(admin.ModelAdmin):
     list_display  = ('title', 'metric', 'period', 'target_value', 'current_value', 'progress_percent', 'status')
     list_filter   = ('status', 'metric', 'period')
     search_fields = ('title', 'description')
+
+
+@admin.register(AppPreferences)
+class AppPreferencesAdmin(admin.ModelAdmin):
+    list_display = ('display_currency', 'usd_to_eur_rate', 'updated_at')

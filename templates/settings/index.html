@@ -3,11 +3,76 @@
 {% block page_title %}Settings{% endblock %}
 {% block content %}
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+<div class="space-y-4 max-w-4xl">
+
+  <div class="card p-5 animate-in" style="animation-delay:0ms">
+    <div class="flex items-start gap-4 mb-4">
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
+        <i data-lucide="badge-dollar-sign" style="width:18px;height:18px;color:var(--accent)"></i>
+      </div>
+      <div>
+        <p class="text-sm font-medium" style="color:var(--text-primary)">P&amp;L Display Currency</p>
+        <p class="text-xs mt-1" style="color:var(--text-secondary)">Changes the display currency for P&amp;L and other derived money values. Strikes and option prices remain unchanged.</p>
+      </div>
+    </div>
+
+    <form method="POST" class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-x-4 gap-y-1 items-start">
+      {% csrf_token %}
+      <div>
+        <label class="block text-xs mb-1.5" style="color:var(--text-secondary)">{{ preferences_form.display_currency.label }}</label>
+      </div>
+      <div>
+        <label class="block text-xs mb-1.5" style="color:var(--text-secondary)">Live USD to EUR rate</label>
+      </div>
+      <div class="hidden md:block"></div>
+
+      <div>
+        {{ preferences_form.display_currency }}
+      </div>
+      <div>
+        <div class="px-3 rounded-lg text-sm mono flex items-center h-[42px]" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary)">
+          1 USD = {{ preferences.usd_to_eur_rate|floatformat:4 }} EUR
+        </div>
+      </div>
+      <div class="md:self-end">
+        <button type="submit"
+          class="px-4 h-[42px] min-h-[42px] inline-flex items-center justify-center text-sm font-medium rounded-lg transition-colors"
+          style="background:var(--accent);color:#fff"
+          onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Save Currency</button>
+      </div>
+
+      <div class="hidden md:block"></div>
+      <div>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">
+          {% if preferences.exchange_rate_updated_at %}
+          Last updated {{ preferences.exchange_rate_updated_at|date:"Y-m-d H:i" }}.
+          {% else %}
+          Fetched automatically when EUR is selected.
+          {% endif %}
+        </p>
+      </div>
+    </form>
+
+    {% if preferences_form.errors %}
+    <div class="mt-3 text-sm p-3 rounded-lg" style="background:var(--loss-glow);color:var(--loss);border:1px solid rgba(244,63,94,0.2)">
+      {% for field, errors in preferences_form.errors.items %}{% for error in errors %}
+      <p>{{ field }}: {{ error }}</p>
+      {% endfor %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if rate_fetch_error %}
+    <div class="mt-3 text-sm p-3 rounded-lg" style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)">
+      <p>{{ rate_fetch_error }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
   <a href="{% url 'settings_checklist' %}"
     class="card p-5 flex items-start gap-4 transition-colors animate-in"
-    style="animation-delay:0ms"
+    style="animation-delay:40ms"
     onmouseover="this.style.borderColor='rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='var(--border)'">
     <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
       <i data-lucide="list-checks" style="width:18px;height:18px;color:var(--accent)"></i>
@@ -20,7 +85,7 @@
 
   <a href="{% url 'goals' %}"
     class="card p-5 flex items-start gap-4 transition-colors animate-in"
-    style="animation-delay:40ms"
+    style="animation-delay:80ms"
     onmouseover="this.style.borderColor='rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='var(--border)'">
     <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
       <i data-lucide="target" style="width:18px;height:18px;color:var(--accent)"></i>
@@ -33,7 +98,7 @@
 
   <a href="{% url 'ibkr_settings' %}"
     class="card p-5 flex items-start gap-4 transition-colors animate-in"
-    style="animation-delay:80ms"
+    style="animation-delay:120ms"
     onmouseover="this.style.borderColor='rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='var(--border)'">
     <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
       <i data-lucide="plug" style="width:18px;height:18px;color:var(--accent)"></i>
@@ -46,7 +111,7 @@
 
   <a href="{% url 'import_upload' %}"
     class="card p-5 flex items-start gap-4 transition-colors animate-in"
-    style="animation-delay:120ms"
+    style="animation-delay:160ms"
     onmouseover="this.style.borderColor='rgba(59,130,246,0.3)'" onmouseout="this.style.borderColor='var(--border)'">
     <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--accent-glow)">
       <i data-lucide="upload" style="width:18px;height:18px;color:var(--accent)"></i>
@@ -56,6 +121,8 @@
       <p class="text-xs mt-1" style="color:var(--text-secondary)">Upload IBKR Activity Statement CSV</p>
     </div>
   </a>
+
+  </div>
 
 </div>
 

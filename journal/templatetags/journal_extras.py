@@ -4,6 +4,7 @@ journal/templatetags/journal_extras.py
 from decimal import Decimal, InvalidOperation
 
 from django import template
+from journal.models import get_app_preferences
 
 register = template.Library()
 
@@ -62,11 +63,26 @@ def pnl_bg(value):
 def pnl_str(value, decimals=2):
     """Format P&L as +$1,234.56 or -$1,234.56."""
     try:
-        v = float(value)
+        prefs = get_app_preferences()
+        converted = prefs.convert_pnl_value(value)
+        v = float(converted)
         sign = '+' if v >= 0 else '-'
-        return f'{sign}${abs(v):,.{int(decimals)}f}'
-    except (TypeError, ValueError):
+        return f'{sign}{prefs.pnl_currency_symbol}{abs(v):,.{int(decimals)}f}'
+    except (TypeError, ValueError, InvalidOperation):
         return '—'
+
+
+@register.simple_tag
+def pnl_currency_symbol():
+    return get_app_preferences().pnl_currency_symbol
+
+
+@register.simple_tag
+def pnl_conversion_rate():
+    prefs = get_app_preferences()
+    if prefs.display_currency == 'EUR':
+        return prefs.usd_to_eur_rate
+    return Decimal('1')
 
 
 @register.filter

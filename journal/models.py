@@ -7,9 +7,13 @@ All times stored in ET (America/New_York) — USE_TZ=True in settings.
 """
 
 import datetime
+import json
 from functools import lru_cache
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 import holidays
@@ -50,6 +54,88 @@ def previous_market_day(value):
     while is_market_closed_day(value):
         value -= datetime.timedelta(days=1)
     return value
+
+
+class DisplayCurrency(models.TextChoices):
+    USD = 'USD', 'US Dollar ($)'
+    EUR = 'EUR', 'Euro (€)'
+
+
+class AppPreferences(models.Model):
+    display_currency = models.CharField(
+        max_length=3,
+        choices=DisplayCurrency.choices,
+        default=DisplayCurrency.USD,
+    )
+    usd_to_eur_rate = models.DecimalField(
+        'USD to EUR rate',
+        max_digits=8,
+        decimal_places=4,
+        default=Decimal('0.9200'),
+        validators=[MinValueValidator(Decimal('0.0001'))],
+        help_text='Fetched automatically when P&L display currency is set to EUR.',
+    )
+    exchange_rate_updated_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'App Preferences ({self.display_currency})'
+
+    @property
+    def pnl_currency_symbol(self):
+        return '$' if self.display_currency == DisplayCurrency.USD else '€'
+
+    def convert_pnl_value(self, value):
+        amount = Decimal(str(value))
+        if self.display_currency == DisplayCurrency.EUR:
+            try:
+                self.refresh_exchange_rate_if_needed()
+            except (URLError, ValueError):
+                pass
+            amount = amount * self.usd_to_eur_rate
+        return amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    def exchange_rate_is_stale(self):
+        if not self.exchange_rate_updated_at:
+            return True
+        age = timezone.now() - self.exchange_rate_updated_at
+        return age >= datetime.timedelta(hours=24)
+
+    def fetch_usd_to_eur_rate(self):
+        request = Request(
+            'https://api.frankfurter.dev/v1/latest?from=USD&to=EUR',
+            headers={'User-Agent': 'TradingJournal/1.0'},
+        )
+        with urlopen(request, timeout=5) as response:
+            payload = json.load(response)
+        rate = payload.get('rates', {}).get('EUR')
+        if rate is None:
+            raise ValueError('USD to EUR rate missing from response')
+        return Decimal(str(rate)).quantize(Decimal('0.0001'), rounding=ROUND_HALF_UP)
+
+    def refresh_exchange_rate_if_needed(self, force=False):
+        if self.display_currency != DisplayCurrency.EUR:
+            return False
+        if not force and not self.exchange_rate_is_stale():
+            return False
+        rate = self.fetch_usd_to_eur_rate()
+        now = timezone.now()
+        AppPreferences.objects.filter(pk=self.pk).update(
+            usd_to_eur_rate=rate,
+            exchange_rate_updated_at=now,
+        )
+        self.usd_to_eur_rate = rate
+        self.exchange_rate_updated_at = now
+        return True
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+
+def get_app_preferences():
+    prefs, _ = AppPreferences.objects.get_or_create(pk=1)
+    return prefs
 
 
 # ---------------------------------------------------------------------------

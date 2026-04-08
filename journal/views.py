@@ -601,7 +601,43 @@ def goal_delete(request, pk):
 # ============================================================
 
 def settings_index(request):
-    return render(request, 'settings/index.html', {})
+    from .forms import AppPreferencesForm
+    from .models import get_app_preferences
+    from urllib.error import URLError
+
+    preferences = get_app_preferences()
+    rate_fetch_error = None
+    if request.method == 'POST':
+        form = AppPreferencesForm(request.POST, instance=preferences)
+        if form.is_valid():
+            preferences = form.save()
+            if preferences.display_currency == 'EUR':
+                try:
+                    preferences.refresh_exchange_rate_if_needed(force=True)
+                except (URLError, ValueError):
+                    rate_fetch_error = (
+                        'Could not refresh the live USD to EUR rate. '
+                        'Using the last saved rate instead.'
+                    )
+            if rate_fetch_error:
+                messages.warning(request, rate_fetch_error)
+            else:
+                messages.success(request, 'Display preferences updated.')
+            return redirect('settings_index')
+    else:
+        form = AppPreferencesForm(instance=preferences)
+
+    if preferences.display_currency == 'EUR':
+        try:
+            preferences.refresh_exchange_rate_if_needed()
+        except (URLError, ValueError):
+            rate_fetch_error = 'Live USD to EUR rate is temporarily unavailable.'
+
+    return render(request, 'settings/index.html', {
+        'preferences_form': form,
+        'preferences': preferences,
+        'rate_fetch_error': rate_fetch_error,
+    })
 
 
 def settings_checklist(request):
