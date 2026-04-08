@@ -165,9 +165,13 @@ def trade_list(request):
     if status:
         qs = qs.filter(status=status)
     if tag:
+        tag = tag.strip().lower()
         # SQLite JSONField doesn't support __contains for array membership;
         # filter in Python after fetching the queryset.
-        qs = [t for t in qs if tag.lower() in [x.lower() for x in (t.strategy_tags or [])]]
+        qs = [
+            trade for trade in qs
+            if any(tag in strategy_tag.lower() for strategy_tag in (trade.strategy_tags or []))
+        ]
 
     return render(request, 'journal/trade_list.html', {
         'trades': qs,

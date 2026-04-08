@@ -106,3 +106,64 @@ class DashboardTagStatsTests(TestCase):
 		self.assertContains(response, 'Best')
 		self.assertContains(response, 'Gap rules', count=1)
 		self.assertNotContains(response, 'Worst')
+
+
+class TradeListTagFilterTests(TestCase):
+	def test_trade_list_filters_by_partial_tag_match(self):
+		trade_date = timezone.localdate()
+		matching_trade = Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 15),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			strategy_tags=['Gap rules', 'Morning breakout'],
+		)
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='QQQ',
+			option_type=OptionType.PUT,
+			strike='430',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='4.00',
+			entry_time=datetime.time(11, 0),
+			trade_type=TradeType.LONG_PUT,
+			status=TradeStatus.OPEN,
+			strategy_tags=['Trend day'],
+		)
+
+		response = self.client.get(reverse('trade_list'), {'tag': 'gap'})
+
+		self.assertContains(response, matching_trade.symbol)
+		self.assertContains(response, 'Gap rules')
+		self.assertNotContains(response, 'QQQ')
+
+	def test_trade_list_shows_tags_column(self):
+		trade_date = timezone.localdate()
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			entry_time=datetime.time(9, 30),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.OPEN,
+			strategy_tags=['Gap rules', 'Opening drive'],
+		)
+
+		response = self.client.get(reverse('trade_list'))
+
+		self.assertContains(response, 'Tags')
+		self.assertContains(response, 'Gap rules')
+		self.assertContains(response, 'Opening drive')

@@ -91,13 +91,13 @@
           <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Date</th>
           <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Symbol</th>
           <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Type</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Tags</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Strike</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Qty</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Entry</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Exit</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">P&amp;L</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">R:R</th>
-          <th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Status</th>
           <th class="px-4 py-3"></th>
         </tr>
       </thead>
@@ -113,6 +113,20 @@
             <span class="text-xs font-medium" style="color:var(--text-primary);">{{ trade.option_type }}</span>
             <span class="text-xs ml-1" style="color:var(--text-secondary);">{{ trade.get_trade_type_display }}</span>
           </td>
+          <td class="px-4 py-3">
+            {% if trade.strategy_tags %}
+            <div class="flex flex-wrap gap-1.5">
+              {% for tag in trade.strategy_tags %}
+              <span class="text-xs px-2 py-0.5 rounded-full"
+                    style="background:var(--accent-glow);color:var(--accent);border:1px solid rgba(59,130,246,0.18);">
+                {{ tag }}
+              </span>
+              {% endfor %}
+            </div>
+            {% else %}
+            <span class="text-xs" style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-primary);">{{ trade.strike }}</td>
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-secondary);">{{ trade.quantity }}</td>
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-primary);">${{ trade.entry_price|floatformat:2 }}</td>
@@ -126,13 +140,6 @@
           </td>
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-secondary);">
             {% if trade.risk_reward_ratio %}{{ trade.risk_reward_ratio|rr_str }}:1{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
-          </td>
-          <td class="px-4 py-3 text-center">
-            <span class="text-xs px-2 py-0.5 rounded-full font-medium
-              {% if trade.status == 'OPEN' %}text-neutral{% elif trade.status == 'CLOSED' %}text-profit{% else %}text-slate-400{% endif %}"
-              style="background:{% if trade.status == 'OPEN' %}rgba(148,163,184,0.1){% elif trade.status == 'CLOSED' %}var(--profit-glow){% else %}rgba(100,116,139,0.1){% endif %};">
-              {{ trade.status }}
-            </span>
           </td>
           <td class="px-4 py-3 text-right">
             <a href="{% url 'trade_detail' trade.pk %}"
