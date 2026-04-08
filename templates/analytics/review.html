@@ -164,16 +164,16 @@
           {% if best_trades %}
           <div class="space-y-3">
             {% for trade in best_trades %}
-            <div class="{% if not forloop.last %}pb-3{% endif %}" {% if not forloop.last %}style="border-bottom:1px solid var(--border)"{% endif %}>
+            <a href="{% url 'trade_detail' trade.pk %}" class="block {% if not forloop.last %}pb-3{% endif %}" {% if not forloop.last %}style="border-bottom:1px solid var(--border)"{% endif %}>
               <div class="flex items-center justify-between gap-4">
                 <div>
-                  <p class="font-semibold" style="color:var(--text-primary)">{{ forloop.counter }}. {{ trade.symbol }} {{ trade.option_type }} {{ trade.strike }}</p>
+                  <p class="font-semibold transition-colors" style="color:var(--text-primary)" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-primary)'">{{ forloop.counter }}. {{ trade.symbol }} {{ trade.option_type }} {{ trade.strike }}</p>
                   <p class="text-xs mt-1" style="color:var(--text-secondary)">{{ trade.trade_date }} · {{ trade.get_trade_type_display }}</p>
                 </div>
                 <span class="mono text-base font-semibold" style="color:var(--profit)">{{ trade.pnl|pnl_str }}</span>
               </div>
               {% if trade.trade_notes %}<p class="text-sm mt-3" style="color:var(--text-secondary)">{{ trade.trade_notes|truncatechars:140 }}</p>{% endif %}
-            </div>
+            </a>
             {% endfor %}
           </div>
           {% else %}
@@ -185,16 +185,16 @@
           {% if worst_trades %}
           <div class="space-y-3">
             {% for trade in worst_trades %}
-            <div class="{% if not forloop.last %}pb-3{% endif %}" {% if not forloop.last %}style="border-bottom:1px solid var(--border)"{% endif %}>
+            <a href="{% url 'trade_detail' trade.pk %}" class="block {% if not forloop.last %}pb-3{% endif %}" {% if not forloop.last %}style="border-bottom:1px solid var(--border)"{% endif %}>
               <div class="flex items-center justify-between gap-4">
                 <div>
-                  <p class="font-semibold" style="color:var(--text-primary)">{{ forloop.counter }}. {{ trade.symbol }} {{ trade.option_type }} {{ trade.strike }}</p>
+                  <p class="font-semibold transition-colors" style="color:var(--text-primary)" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-primary)'">{{ forloop.counter }}. {{ trade.symbol }} {{ trade.option_type }} {{ trade.strike }}</p>
                   <p class="text-xs mt-1" style="color:var(--text-secondary)">{{ trade.trade_date }} · {{ trade.get_trade_type_display }}</p>
                 </div>
                 <span class="mono text-base font-semibold" style="color:var(--loss)">{{ trade.pnl|pnl_str }}</span>
               </div>
               {% if trade.rule_break_notes %}<p class="text-sm mt-3" style="color:var(--text-secondary)">{{ trade.rule_break_notes|truncatechars:140 }}</p>{% elif trade.exit_notes %}<p class="text-sm mt-3" style="color:var(--text-secondary)">{{ trade.exit_notes|truncatechars:140 }}</p>{% endif %}
-            </div>
+            </a>
             {% endfor %}
           </div>
           {% else %}
@@ -211,7 +211,11 @@
       </div>
       <div class="space-y-2">
         {% for row in session_rows %}
-        <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
+        <a href="{% url 'session_detail' row.date|date:'Y-m-d' %}"
+           class="block rounded-xl p-4 transition-colors"
+           style="background:var(--bg-elevated);border:1px solid var(--border)"
+           onmouseover="this.style.borderColor='rgba(59,130,246,0.24)'"
+           onmouseout="this.style.borderColor='var(--border)'">
           <div class="flex items-center justify-between gap-4">
             <div>
               <p class="font-semibold" style="color:var(--text-primary)">{{ row.date|date:"l, M j" }}</p>
@@ -233,7 +237,7 @@
           {% else %}
           <p class="text-sm mt-3" style="color:var(--text-secondary)">No session review recorded for this day.</p>
           {% endif %}
-        </div>
+        </a>
         {% endfor %}
       </div>
     </div>
