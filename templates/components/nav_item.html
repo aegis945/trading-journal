@@ -1,8 +1,7 @@
 {% load journal_extras %}
-{# Active state: exact match for /, prefix match otherwise #}
 <a
   href="{{ href }}"
-  class="nav-item{% if href == '/' %}{% if request.path == '/' %} active{% endif %}{% else %}{% if request.path|startswith:href %} active{% endif %}{% endif %}"
+  class="nav-item{% if child %} nav-item-child{% endif %}{% if exact %}{% if request.path == href %} active{% endif %}{% elif href == '/' %}{% if request.path == '/' %} active{% endif %}{% else %}{% if request.path|startswith:href %} active{% endif %}{% endif %}"
 >
   <i data-lucide="{{ icon }}" class="nav-icon flex-shrink-0"></i>
   <span

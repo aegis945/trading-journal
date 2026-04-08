@@ -180,6 +180,22 @@
         transition: opacity 200ms;
         overflow: hidden;
       }
+      .nav-item-child {
+        margin-left: 14px;
+        padding-left: 16px;
+        font-size: 0.75rem;
+      }
+      .nav-item-child::before {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 50%;
+        width: 6px;
+        height: 1px;
+        background: currentColor;
+        opacity: 0.45;
+        transform: translateY(-50%);
+      }
 
       /* ── Toast system ───────────────────────────────── */
       #toast-container {
@@ -307,6 +323,7 @@
           {% url 'session_list'     as url_sessions %}
           {% url 'calendar'         as url_calendar %}
           {% url 'analytics'        as url_analytics %}
+          {% url 'performance_review' as url_weekly_review %}
           {% url 'journal_list'     as url_journal %}
           {% url 'goals'            as url_goals %}
           {% url 'ibkr_status_page' as url_ibkr %}
@@ -318,6 +335,7 @@
             {% include "components/nav_item.html" with href=url_sessions   icon="calendar-days"    label="Sessions" %}
             {% include "components/nav_item.html" with href=url_calendar   icon="calendar"         label="Calendar" %}
             {% include "components/nav_item.html" with href=url_analytics  icon="bar-chart-2"      label="Analytics" %}
+            {% include "components/nav_item.html" with href=url_weekly_review icon="notebook-pen" label="Weekly Review" exact=True child=True %}
             {% include "components/nav_item.html" with href=url_journal    icon="book-open"        label="Journal" %}
             {% include "components/nav_item.html" with href=url_goals      icon="target"           label="Goals" %}
             <div class="my-2 mx-1" style="border-top: 1px solid var(--border);"></div>

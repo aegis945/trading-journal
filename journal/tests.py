@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import PerformanceGoalForm, TradeForm, TradingSessionForm
-from .models import AppPreferences, OptionType, PerformanceGoal, RuleReview, Trade, TradeStatus, TradeType, TradingSession
+from .models import AppPreferences, EntryType, JournalEntry, OptionType, PerformanceGoal, RuleReview, Trade, TradeStatus, TradeType, TradingSession
 from .templatetags.journal_extras import pnl_str
 from .views import _compute_tag_stats
 
@@ -631,3 +631,105 @@ class DashboardRuleMetricTests(TestCase):
 		self.assertContains(response, 'early entry')
 		self.assertContains(response, 'Logged 1 time across closed trades')
 		self.assertContains(response, 'each')
+
+
+class WeeklyReviewTests(TestCase):
+	def test_weekly_review_aggregates_existing_trade_session_and_journal_data(self):
+		trade_date = datetime.date(2026, 4, 8)
+		session = TradingSession.objects.create(
+			date=trade_date,
+			market_bias='BULLISH',
+			psychological_state=4,
+			market_open_notes='Wait for confirmation at the open.',
+			session_notes='Stayed patient and only took one clean setup.',
+		)
+		trade = Trade.objects.create(
+			session=session,
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 5),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			strategy_tags=['Opening drive'],
+			rule_review=RuleReview.FOLLOWED,
+			trade_notes='Waited for reclaim and took the retest entry.',
+		)
+		JournalEntry.objects.create(
+			title='Weekly lesson',
+			content='Patience improved my entries this week.',
+			entry_type=EntryType.LESSON,
+			trade=trade,
+			session=session,
+		)
+
+		response = self.client.get(reverse('performance_review'), {'week': '2026-04-07'})
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'Weekly Review')
+		self.assertContains(response, '+$200.00')
+		self.assertContains(response, '100.0%')
+		self.assertContains(response, 'Opening drive')
+		self.assertContains(response, 'Stayed patient and only took one clean setup.')
+		self.assertContains(response, 'Weekly lesson')
+		self.assertContains(response, 'No losing trades yet this week.')
+
+	def test_weekly_review_defaults_to_latest_activity_week(self):
+		older_date = datetime.date(2026, 3, 31)
+		latest_date = datetime.date(2026, 4, 8)
+		Trade.objects.create(
+			trade_date=older_date,
+			symbol='QQQ',
+			option_type=OptionType.PUT,
+			strike='430',
+			expiry=older_date,
+			quantity=1,
+			entry_price='4.00',
+			exit_price='3.00',
+			entry_time=datetime.time(10, 0),
+			exit_time=datetime.time(10, 30),
+			trade_type=TradeType.LONG_PUT,
+			status=TradeStatus.CLOSED,
+		)
+		JournalEntry.objects.create(
+			title='Latest note',
+			content='This should anchor the latest review week.',
+			entry_type=EntryType.OBSERVATION,
+			created_at=timezone.make_aware(datetime.datetime(2026, 4, 8, 12, 0)),
+		)
+
+		response = self.client.get(reverse('performance_review'))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'Week of Apr 6 - Apr 12, 2026')
+		self.assertContains(response, 'Latest note')
+
+	def test_weekly_review_shows_worst_trade_only_for_losses(self):
+		trade_date = datetime.date(2026, 4, 8)
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.PUT,
+			strike='6780',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='11.32',
+			entry_time=datetime.time(9, 35),
+			exit_time=datetime.time(10, 5),
+			trade_type=TradeType.LONG_PUT,
+			status=TradeStatus.CLOSED,
+			trade_notes='Profited from the opening flush.',
+		)
+
+		response = self.client.get(reverse('performance_review'), {'week': '2026-04-08'})
+
+		self.assertContains(response, 'Best Trade')
+		self.assertContains(response, 'Profited from the opening flush.')
+		self.assertContains(response, 'No losing trades yet this week.')
