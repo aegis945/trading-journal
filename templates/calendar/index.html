@@ -73,7 +73,7 @@
         <!-- Trade count -->
         {% if cell.trade_count %}
         <p class="text-xs mt-0.5" style="color:var(--text-muted);">
-          {{ cell.trade_count }}t
+          {{ cell.trade_count }} trade{{ cell.trade_count|pluralize }}
         </p>
         {% endif %}
       </a>
