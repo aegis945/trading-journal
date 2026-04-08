@@ -77,6 +77,8 @@ class TradeForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             self.fields['strategy_tags_text'].initial = ', '.join(self.instance.strategy_tags or [])
             self.fields['rule_break_tags_text'].initial = ', '.join(self.instance.rule_break_tags or [])
+        elif not self.is_bound and self.initial.get('quantity') in (None, ''):
+            self.fields['quantity'].initial = 1
         self.fields['rule_review'].required = False
         self.fields['rule_review'].choices = [('', 'Not reviewed')] + list(RuleReview.choices)
 

@@ -342,6 +342,13 @@ class TradeListTagFilterTests(TestCase):
 		self.assertFalse(form.is_valid())
 		self.assertIn('rule_break_tags_text', form.errors)
 
+	def test_trade_add_defaults_contract_quantity_to_one(self):
+		response = self.client.get(reverse('trade_add'))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'name="quantity"')
+		self.assertContains(response, 'value="1"', html=False)
+
 	def test_calendar_weekend_cells_are_not_clickable(self):
 		response = self.client.get(reverse('calendar'), {'year': 2026, 'month': 4})
 
