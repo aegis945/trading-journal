@@ -15,7 +15,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from journal.models import Trade, TradingSession, TradeStatus
+from journal.models import RuleReview, Trade, TradingSession, TradeStatus
 
 
 def analytics_index(request):
@@ -166,6 +166,50 @@ def data_setup_quality(request):
             'count': total,
         })
     return JsonResponse({'data': result})
+
+
+def data_rule_review_summary(request):
+    labels = ['Followed rules', 'Rule break', 'Not reviewed']
+    configs = [
+        ('FOLLOWED', _closed_qs(request).filter(rule_review=RuleReview.FOLLOWED)),
+        ('BROKE', _closed_qs(request).filter(rule_review=RuleReview.BROKE)),
+        ('UNREVIEWED', _closed_qs(request).filter(Q(rule_review__isnull=True) | Q(rule_review=''))),
+    ]
+
+    counts, avg_pnl, win_rates = [], [], []
+    for _label, qs in configs:
+        total = qs.count()
+        counts.append(total)
+        avg = qs.aggregate(avg=Avg('pnl'))['avg']
+        avg_pnl.append(round(float(avg or 0), 2))
+        win_rates.append(round(qs.filter(pnl__gt=0).count() / total * 100, 1) if total else 0)
+
+    return JsonResponse({
+        'labels': labels,
+        'counts': counts,
+        'avg_pnl': avg_pnl,
+        'win_rates': win_rates,
+    })
+
+
+def data_rule_break_tags(request):
+    tag_data: dict[str, dict] = defaultdict(lambda: {'count': 0, 'pnl': []})
+    for row in _closed_qs(request).filter(rule_review=RuleReview.BROKE).values('rule_break_tags', 'pnl'):
+        tags = row['rule_break_tags'] or ['Unspecified']
+        for tag in tags:
+            tag_data[tag]['count'] += 1
+            tag_data[tag]['pnl'].append(float(row['pnl']))
+
+    ranked = sorted(tag_data.items(), key=lambda item: (-item[1]['count'], sum(item[1]['pnl'])))[:8]
+    labels = [item[0] for item in ranked]
+    counts = [item[1]['count'] for item in ranked]
+    avg_pnl = [round(sum(item[1]['pnl']) / len(item[1]['pnl']), 2) if item[1]['pnl'] else 0 for item in ranked]
+
+    return JsonResponse({
+        'labels': labels,
+        'counts': counts,
+        'avg_pnl': avg_pnl,
+    })
 
 
 def data_duration_vs_pnl(request):

@@ -172,6 +172,24 @@
             {{ form.setup_quality }}
           </div>
         </div>
+        <div class="rounded-xl border p-4 mb-4" style="background:rgba(255,255,255,0.02);border-color:var(--border)">
+          <p class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Rule Tracking</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule Review</label>
+              {{ form.rule_review }}
+            </div>
+            <div>
+              <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule-break tags</label>
+              {{ form.rule_break_tags_text }}
+              <p class="text-xs mt-1" style="color:var(--text-muted)">Only needed when the trade broke your rules.</p>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule-break notes</label>
+            {{ form.rule_break_notes }}
+          </div>
+        </div>
         <div class="mb-4">
           <label class="block text-xs mb-1" style="color:var(--text-secondary)">Trade Notes (rationale)</label>
           {{ form.trade_notes }}

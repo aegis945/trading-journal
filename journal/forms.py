@@ -6,7 +6,7 @@ from django import forms
 from .models import (
     Trade, TradingSession, JournalEntry,
     PreTradeChecklist, PerformanceGoal, AppPreferences,
-    OptionType, TradeType, TradeStatus, MarketBias, is_market_closed_day,
+    OptionType, TradeType, TradeStatus, MarketBias, RuleReview, is_market_closed_day,
 )
 
 
@@ -24,6 +24,15 @@ class TradeForm(forms.ModelForm):
         widget=forms.TextInput(attrs={
             'class': _INPUT_CLASSES,
             'placeholder': 'momentum, open drive, VWAP reclaim',
+        }),
+    )
+    rule_break_tags_text = forms.CharField(
+        required=False,
+        label='Rule-break tags',
+        help_text='Comma-separated, e.g. early entry, oversized, revenge trade',
+        widget=forms.TextInput(attrs={
+            'class': _INPUT_CLASSES,
+            'placeholder': 'early entry, oversized, revenge trade',
         }),
     )
 
@@ -54,6 +63,8 @@ class TradeForm(forms.ModelForm):
             'planned_take_profit_2':  forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01'}),
             'planned_take_profit_3':  forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01'}),
             'setup_quality':          forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'min': '1', 'max': '5', 'placeholder': '3'}),
+            'rule_review':            forms.Select(attrs={'class': _SELECT_CLASSES}),
+            'rule_break_notes':       forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3', 'placeholder': 'What rule broke down? What triggered it?'}),
             'trade_notes':            forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3', 'placeholder': 'Pre-trade rationale…'}),
             'exit_notes':             forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3', 'placeholder': 'What happened…'}),
             'ta_screenshot':          forms.ClearableFileInput(attrs={'class': _INPUT_CLASSES, 'accept': 'image/*'}),
@@ -65,10 +76,17 @@ class TradeForm(forms.ModelForm):
         # Pre-populate the text field from the instance's JSON list
         if self.instance and self.instance.pk:
             self.fields['strategy_tags_text'].initial = ', '.join(self.instance.strategy_tags or [])
+            self.fields['rule_break_tags_text'].initial = ', '.join(self.instance.rule_break_tags or [])
+        self.fields['rule_review'].required = False
+        self.fields['rule_review'].choices = [('', 'Not reviewed')] + list(RuleReview.choices)
 
     def clean_strategy_tags_text(self):
         raw = self.cleaned_data.get('strategy_tags_text', '')
         return [t.strip() for t in raw.split(',') if t.strip()]
+
+    def clean_rule_break_tags_text(self):
+        raw = self.cleaned_data.get('rule_break_tags_text', '')
+        return [tag.strip() for tag in raw.split(',') if tag.strip()]
 
     def clean_trade_date(self):
         trade_date = self.cleaned_data['trade_date']
@@ -76,9 +94,24 @@ class TradeForm(forms.ModelForm):
             raise forms.ValidationError('Trades cannot be logged when the market is closed.')
         return trade_date
 
+    def clean(self):
+        cleaned_data = super().clean()
+        rule_review = cleaned_data.get('rule_review')
+        rule_break_tags = cleaned_data.get('rule_break_tags_text') or []
+        rule_break_notes = (cleaned_data.get('rule_break_notes') or '').strip()
+
+        if rule_review != RuleReview.BROKE:
+            cleaned_data['rule_break_tags_text'] = []
+            cleaned_data['rule_break_notes'] = ''
+        elif not rule_break_tags and not rule_break_notes:
+            self.add_error('rule_break_tags_text', 'Add at least one rule-break tag or note for rule-break trades.')
+
+        return cleaned_data
+
     def save(self, commit=True):
         trade = super().save(commit=False)
         trade.strategy_tags = self.cleaned_data['strategy_tags_text']
+        trade.rule_break_tags = self.cleaned_data['rule_break_tags_text']
         if commit:
             trade.save()
         return trade

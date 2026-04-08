@@ -14,6 +14,8 @@ urlpatterns = [
     path('data/streak/', views.data_streak, name='data_streak'),
     path('data/drawdown/', views.data_drawdown, name='data_drawdown'),
     path('data/setup-quality/', views.data_setup_quality, name='data_setup_quality'),
+    path('data/rule-review-summary/', views.data_rule_review_summary, name='data_rule_review_summary'),
+    path('data/rule-break-tags/', views.data_rule_break_tags, name='data_rule_break_tags'),
     path('data/duration-vs-pnl/', views.data_duration_vs_pnl, name='data_duration_vs_pnl'),
     path('data/monthly-table/', views.data_monthly_table, name='data_monthly_table'),
 ]

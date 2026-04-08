@@ -92,6 +92,7 @@
           <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Symbol</th>
           <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Type</th>
           <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Tags</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Rules</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Strike</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Qty</th>
           <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-widest" style="color:var(--text-secondary);">Entry</th>
@@ -127,6 +128,20 @@
             <span class="text-xs" style="color:var(--text-muted);">—</span>
             {% endif %}
           </td>
+          <td class="px-4 py-3">
+            {% if trade.rule_review == 'FOLLOWED' %}
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--profit-glow);color:var(--profit);border:1px solid rgba(16,185,129,0.18);">Followed</span>
+            {% elif trade.rule_review == 'BROKE' %}
+            <div class="flex flex-wrap gap-1.5 items-center">
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--loss-glow);color:var(--loss);border:1px solid rgba(244,63,94,0.18);">Rule break</span>
+              {% for tag in trade.rule_break_tags|slice:":2" %}
+              <span class="text-xs px-2 py-0.5 rounded-full" style="background:var(--bg-elevated);color:var(--text-secondary);">{{ tag }}</span>
+              {% endfor %}
+            </div>
+            {% else %}
+            <span class="text-xs" style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-primary);">{{ trade.strike }}</td>
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-secondary);">{{ trade.quantity }}</td>
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-primary);">${{ trade.entry_price|floatformat:2 }}</td>
@@ -144,7 +159,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="10" class="px-4 py-16 text-center">
+          <td colspan="11" class="px-4 py-16 text-center">
             <div class="flex flex-col items-center gap-3">
               <i data-lucide="inbox" style="width:28px;height:28px;color:var(--text-muted);"></i>
               <p class="text-sm" style="color:var(--text-secondary);">No trades found.</p>

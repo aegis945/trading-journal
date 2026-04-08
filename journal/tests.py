@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import PerformanceGoalForm, TradeForm, TradingSessionForm
-from .models import AppPreferences, OptionType, PerformanceGoal, Trade, TradeStatus, TradeType, TradingSession
+from .models import AppPreferences, OptionType, PerformanceGoal, RuleReview, Trade, TradeStatus, TradeType, TradingSession
 from .templatetags.journal_extras import pnl_str
 from .views import _compute_tag_stats
 
@@ -261,6 +261,51 @@ class TradeListTagFilterTests(TestCase):
 		self.assertFalse(form.is_valid())
 		self.assertIn('trade_date', form.errors)
 
+	def test_trade_form_saves_rule_break_tracking(self):
+		trade_date = _market_day()
+		form = TradeForm(data={
+			'trade_date': trade_date.isoformat(),
+			'symbol': 'SPX',
+			'option_type': OptionType.CALL,
+			'trade_type': TradeType.LONG_CALL,
+			'strike': '5000',
+			'expiry': trade_date.isoformat(),
+			'quantity': 1,
+			'entry_price': '5.00',
+			'entry_time': '09:30',
+			'status': TradeStatus.OPEN,
+			'rule_review': RuleReview.BROKE,
+			'rule_break_tags_text': 'early entry, oversized',
+			'rule_break_notes': 'Chased the move instead of waiting for confirmation.',
+		})
+
+		self.assertTrue(form.is_valid(), form.errors)
+		trade = form.save()
+		self.assertEqual(trade.rule_review, RuleReview.BROKE)
+		self.assertEqual(trade.rule_break_tags, ['early entry', 'oversized'])
+		self.assertIn('waiting for confirmation', trade.rule_break_notes)
+
+	def test_trade_form_requires_rule_break_context_when_marked_broke(self):
+		trade_date = _market_day()
+		form = TradeForm(data={
+			'trade_date': trade_date.isoformat(),
+			'symbol': 'SPX',
+			'option_type': OptionType.CALL,
+			'trade_type': TradeType.LONG_CALL,
+			'strike': '5000',
+			'expiry': trade_date.isoformat(),
+			'quantity': 1,
+			'entry_price': '5.00',
+			'entry_time': '09:30',
+			'status': TradeStatus.OPEN,
+			'rule_review': RuleReview.BROKE,
+			'rule_break_tags_text': '',
+			'rule_break_notes': '',
+		})
+
+		self.assertFalse(form.is_valid())
+		self.assertIn('rule_break_tags_text', form.errors)
+
 	def test_calendar_weekend_cells_are_not_clickable(self):
 		response = self.client.get(reverse('calendar'), {'year': 2026, 'month': 4})
 
@@ -398,3 +443,72 @@ class PerformanceGoalTests(TestCase):
 		self.assertContains(response, 'Follow the rules')
 		self.assertContains(response, 'Process Goal')
 		self.assertNotContains(response, 'target None')
+
+
+class RuleTrackingAnalyticsTests(TestCase):
+	def test_rule_review_summary_endpoint_returns_followed_and_broken_stats(self):
+		trade_date = _market_day()
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 15),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.FOLLOWED,
+		)
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='QQQ',
+			option_type=OptionType.PUT,
+			strike='430',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='4.00',
+			exit_price='3.00',
+			entry_time=datetime.time(11, 0),
+			exit_time=datetime.time(11, 45),
+			trade_type=TradeType.LONG_PUT,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.BROKE,
+			rule_break_tags=['early entry'],
+		)
+
+		response = self.client.get(reverse('data_rule_review_summary'))
+		payload = response.json()
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(payload['labels'][0], 'Followed rules')
+		self.assertEqual(payload['counts'], [1, 1, 0])
+
+	def test_rule_break_tags_endpoint_groups_rule_breaks(self):
+		trade_date = _market_day()
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='4.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(9, 50),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.BROKE,
+			rule_break_tags=['oversized', 'early entry'],
+		)
+
+		response = self.client.get(reverse('data_rule_break_tags'))
+		payload = response.json()
+
+		self.assertEqual(response.status_code, 200)
+		self.assertIn('oversized', payload['labels'])
+		self.assertIn('early entry', payload['labels'])

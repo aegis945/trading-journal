@@ -166,6 +166,11 @@ class TradeStatus(models.TextChoices):
     EXPIRED = 'EXPIRED', 'Expired'
 
 
+class RuleReview(models.TextChoices):
+    FOLLOWED = 'FOLLOWED', 'Followed rules'
+    BROKE = 'BROKE', 'Rule break'
+
+
 class EntryType(models.TextChoices):
     OBSERVATION  = 'OBSERVATION',  'Observation'
     LESSON       = 'LESSON',       'Lesson'
@@ -337,6 +342,19 @@ class Trade(models.Model):
         null=True, blank=True,
         help_text='1 (poor) – 5 (excellent) self-rating at entry',
     )
+    rule_review = models.CharField(
+        max_length=10,
+        choices=RuleReview.choices,
+        null=True,
+        blank=True,
+        help_text='Whether this trade followed your rules or broke them.',
+    )
+    rule_break_tags = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='e.g. ["early entry", "oversized", "revenge trade"]',
+    )
+    rule_break_notes = models.TextField(blank=True, help_text='What rule was broken and why?')
     trade_notes   = models.TextField(blank=True, help_text='Pre-trade rationale')
     exit_notes    = models.TextField(blank=True, help_text='Post-exit commentary')
     ta_screenshot = models.ImageField(
@@ -364,6 +382,14 @@ class Trade(models.Model):
             f'{self.symbol} {self.option_type} {self.strike} '
             f'exp:{self.expiry} qty:{self.quantity} [{self.status}]'
         )
+
+    @property
+    def has_rule_break(self):
+        return self.rule_review == RuleReview.BROKE
+
+    @property
+    def followed_rules(self):
+        return self.rule_review == RuleReview.FOLLOWED
 
     # ------------------------------------------------------------------
     # P&L + R:R auto-calculation

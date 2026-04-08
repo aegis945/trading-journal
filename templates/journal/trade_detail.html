@@ -141,6 +141,26 @@
       </div>
       {% endif %}
 
+      {% if trade.rule_review %}
+      <div class="mt-5">
+        <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-secondary);">Rule Review</p>
+        <div class="rounded-lg border px-3 py-3" style="background:rgba(255,255,255,0.02);border-color:var(--border)">
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="text-xs px-2.5 py-1 rounded-full font-medium"
+                  style="background:{% if trade.followed_rules %}var(--profit-glow){% else %}var(--loss-glow){% endif %};color:{% if trade.followed_rules %}var(--profit){% else %}var(--loss){% endif %};">
+              {{ trade.get_rule_review_display }}
+            </span>
+            {% for tag in trade.rule_break_tags %}
+            <span class="text-xs px-2.5 py-1 rounded-full" style="background:var(--bg-elevated);color:var(--text-secondary)">{{ tag }}</span>
+            {% endfor %}
+          </div>
+          {% if trade.rule_break_notes %}
+          <p class="text-sm" style="color:var(--text-secondary)">{{ trade.rule_break_notes }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
       {% if trade.ta_screenshot %}
       <div class="mt-5">
         <div class="flex items-center justify-between mb-2">

@@ -57,7 +57,25 @@
     </div>
   </div>
 
-  <!-- Row 3: Drawdown + Setup Quality -->
+  <!-- Row 3: Rule Review + Rule Break Tags -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="shield-check" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Rule Review vs Outcome</h3>
+      </div>
+      <canvas id="ruleReviewSummary" height="200"></canvas>
+    </div>
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="shield-alert" style="width:14px;height:14px;color:var(--text-secondary);"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary);">Rule Break Impact</h3>
+      </div>
+      <canvas id="ruleBreakTags" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 4: Drawdown + Setup Quality -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
     <div class="card p-5">
       <div class="flex items-center gap-2 mb-4">
@@ -75,7 +93,7 @@
     </div>
   </div>
 
-  <!-- Row 4: Trade Duration + Monthly Table -->
+  <!-- Row 5: Trade Duration + Monthly Table -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
     <div class="card p-5">
       <div class="flex items-center gap-2 mb-4">
@@ -338,7 +356,90 @@
     });
   });
 
-  // 7. Duration vs P&L
+  // 7. Rule Review Summary
+  fetchData("/analytics/data/rule-review-summary/").then((d) => {
+    new Chart(document.getElementById("ruleReviewSummary"), {
+      type: "bar",
+      data: {
+        labels: d.labels,
+        datasets: [
+          {
+            label: `Avg P&L (${PNL_CURRENCY_SYMBOL})`,
+            data: d.avg_pnl.map(convertPnlValue),
+            backgroundColor: d.avg_pnl.map((value) =>
+              value >= 0 ? "rgba(16,185,129,0.6)" : "rgba(244,63,94,0.6)",
+            ),
+            borderRadius: 4,
+            yAxisID: "y",
+          },
+          {
+            label: "Win Rate (%)",
+            data: d.win_rates,
+            backgroundColor: "rgba(59,130,246,0.35)",
+            borderRadius: 4,
+            yAxisID: "y2",
+          },
+        ],
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          tooltip: {
+            callbacks: {
+              afterBody: (items) => {
+                const i = items[0].dataIndex;
+                return `Trades: ${d.counts[i]}`;
+              },
+            },
+          },
+        },
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: { position: "left", ticks: { color: "#64748b" }, grid: { color: "rgba(255,255,255,0.04)" } },
+          y2: { position: "right", ticks: { color: "#64748b" }, grid: { drawOnChartArea: false } },
+        },
+      },
+    });
+  });
+
+  // 8. Rule Break Tags
+  fetchData("/analytics/data/rule-break-tags/").then((d) => {
+    new Chart(document.getElementById("ruleBreakTags"), {
+      type: "bar",
+      data: {
+        labels: d.labels,
+        datasets: [
+          {
+            label: `Avg P&L (${PNL_CURRENCY_SYMBOL})`,
+            data: d.avg_pnl.map(convertPnlValue),
+            backgroundColor: d.avg_pnl.map((value) =>
+              value >= 0 ? "rgba(16,185,129,0.6)" : "rgba(244,63,94,0.6)",
+            ),
+            borderRadius: 4,
+            yAxisID: "y",
+          },
+          {
+            label: "Count",
+            data: d.counts,
+            backgroundColor: "rgba(148,163,184,0.35)",
+            borderRadius: 4,
+            yAxisID: "y2",
+          },
+        ],
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: { position: "left", ticks: { color: "#64748b" }, grid: { color: "rgba(255,255,255,0.04)" } },
+          y2: { position: "right", ticks: { color: "#64748b", precision: 0 }, grid: { drawOnChartArea: false } },
+        },
+      },
+    });
+  });
+
+  // 9. Duration vs P&L
   fetchData("/analytics/data/duration-vs-pnl/").then((d) => {
     new Chart(document.getElementById("durationVsPnl"), {
       type: "scatter",
@@ -365,7 +466,7 @@
     });
   });
 
-  // 8. Monthly table
+  // 10. Monthly table
   fetchData("/analytics/data/monthly-table/").then((d) => {
     const tbody = document.getElementById("monthly-table-body");
     if (!d.table.length) {
