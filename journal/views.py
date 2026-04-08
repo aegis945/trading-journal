@@ -47,8 +47,8 @@ def dashboard(request):
             checklist_template=active_template,
         )
 
-    # Today's open trades
-    open_trades = Trade.objects.filter(session=session, status=TradeStatus.OPEN)
+    # Current session trades
+    session_trades = Trade.objects.filter(session=session)
 
     # Today's P&L
     today_pnl = Trade.objects.filter(
@@ -89,7 +89,7 @@ def dashboard(request):
     context = {
         'session': session,
         'daily_routine': daily_routine,
-        'open_trades': open_trades,
+        'session_trades': session_trades,
         'today_pnl': today_pnl,
         'win_rate_30d': win_rate_30d,
         'avg_rr': avg_rr,
@@ -131,8 +131,11 @@ def _compute_tag_stats(qs):
     if not tag_pnl:
         return {'best_tag': None, 'worst_tag': None}
     avg_by_tag = {tag: sum(v) / len(v) for tag, v in tag_pnl.items()}
-    best  = max(avg_by_tag, key=avg_by_tag.get)
-    worst = min(avg_by_tag, key=avg_by_tag.get)
+    ranked_tags = sorted(avg_by_tag.items(), key=lambda item: item[1], reverse=True)
+    best = ranked_tags[0][0]
+    worst = None
+    if len(ranked_tags) > 1 and ranked_tags[0][1] != ranked_tags[-1][1]:
+        worst = ranked_tags[-1][0]
     return {'best_tag': best, 'worst_tag': worst, 'avg_by_tag': avg_by_tag}
 
 

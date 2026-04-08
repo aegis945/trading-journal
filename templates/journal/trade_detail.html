@@ -217,11 +217,19 @@
       <a href="{% url 'session_detail' trade.session.date|date:'Y-m-d' %}"
          class="mono text-sm text-accent hover:underline">{{ trade.session.date }}</a>
       <p class="text-xs mt-2" style="color:var(--text-secondary);">
-        Mindset {{ trade.session.psychological_state }}/5 ·
-        <span class="{% if trade.session.market_bias == 'BULLISH' %}text-profit{% elif trade.session.market_bias == 'BEARISH' %}text-loss{% else %}text-neutral{% endif %}">
-          {{ trade.session.market_bias }}
+        {% if trade.session.psychological_state %}
+        Mindset {{ trade.session.psychological_state }}/5
+        {% else %}
+        Mindset pending
+        {% endif %}
+        ·
+        <span class="{% if trade.session.market_bias == 'BULLISH' %}text-profit{% elif trade.session.market_bias == 'BEARISH' %}text-loss{% elif trade.session.market_bias %}text-neutral{% else %}text-secondary{% endif %}">
+          {{ trade.session.market_bias|default:"Needs setup" }}
         </span>
       </p>
+      {% if not trade.session.is_pre_market_complete %}
+      <p class="text-xs mt-2" style="color:var(--text-muted);">Session setup was left blank. Review it from the session page.</p>
+      {% endif %}
     </div>
     {% endif %}
   </div>

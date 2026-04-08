@@ -83,27 +83,45 @@
           </h2>
         </div>
         <span class="text-xs px-2.5 py-0.5 rounded-full border font-medium
-          {% if session.market_bias == 'BULLISH' %}text-profit{% elif session.market_bias == 'BEARISH' %}text-loss{% else %}text-neutral{% endif %}"
-          style="border-color:{% if session.market_bias == 'BULLISH' %}rgba(16,185,129,0.3){% elif session.market_bias == 'BEARISH' %}rgba(244,63,94,0.3){% else %}rgba(148,163,184,0.3){% endif %};
-                 background:{% if session.market_bias == 'BULLISH' %}var(--profit-glow){% elif session.market_bias == 'BEARISH' %}var(--loss-glow){% else %}rgba(148,163,184,0.08){% endif %};">
-          {{ session.market_bias }}
+          {% if session.market_bias == 'BULLISH' %}text-profit{% elif session.market_bias == 'BEARISH' %}text-loss{% elif session.market_bias %}text-neutral{% else %}text-secondary{% endif %}"
+          style="border-color:{% if session.market_bias == 'BULLISH' %}rgba(16,185,129,0.3){% elif session.market_bias == 'BEARISH' %}rgba(244,63,94,0.3){% elif session.market_bias %}rgba(148,163,184,0.3){% else %}var(--border){% endif %};
+                 background:{% if session.market_bias == 'BULLISH' %}var(--profit-glow){% elif session.market_bias == 'BEARISH' %}var(--loss-glow){% elif session.market_bias %}rgba(148,163,184,0.08){% else %}var(--bg-elevated){% endif %};">
+          {{ session.market_bias|default:"Needs setup" }}
         </span>
       </div>
+
+      {% if not session.is_pre_market_complete %}
+      <div class="rounded-xl border px-3 py-3 mb-4 flex items-start justify-between gap-3"
+           style="border-color:rgba(59,130,246,0.24);background:var(--accent-glow);">
+        <div>
+          <p class="text-sm font-medium" style="color:var(--text-primary);">Today's session plan is still blank.</p>
+          <p class="text-xs mt-1" style="color:var(--text-secondary);">Set your bias, mindset, and market context before the session gets going.</p>
+        </div>
+        <a href="{% url 'session_detail' session.date|date:'Y-m-d' %}"
+           class="text-xs font-medium whitespace-nowrap"
+           style="color:var(--accent)">
+          Fill it out &rarr;
+        </a>
+      </div>
+      {% endif %}
 
       <!-- Psych + VIX -->
       <div class="flex items-center gap-2 mb-4">
         <span class="text-xs mr-1" style="color:var(--text-secondary);">Mindset</span>
         {% for i in "12345" %}
         <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold cursor-default
-          {% if forloop.counter <= session.psychological_state %}
+          {% if session.psychological_state and forloop.counter <= session.psychological_state %}
             {% if session.psychological_state >= 4 %}bg-profit/20 text-profit
             {% elif session.psychological_state == 3 %}bg-neutral/20 text-neutral
             {% else %}bg-loss/20 text-loss{% endif %}
           {% else %}bg-white/5{% endif %}"
-          style="{% if not forloop.counter <= session.psychological_state %}color:var(--text-muted);{% endif %}">
+          style="{% if not session.psychological_state or forloop.counter > session.psychological_state %}color:var(--text-muted);{% endif %}">
           {{ forloop.counter }}
         </span>
         {% endfor %}
+        {% if not session.psychological_state %}
+        <span class="ml-2 text-xs" style="color:var(--text-muted);">Pending</span>
+        {% endif %}
         {% if session.vix_level %}
         <span class="ml-3 text-xs" style="color:var(--text-secondary);">
           VIX <span class="mono font-medium" style="color:var(--text-primary);">{{ session.vix_level }}</span>
@@ -119,7 +137,7 @@
       </p>
       {% endif %}
 
-      <!-- Today's trades -->
+      <!-- Session trades -->
       <div>
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-medium" style="color:var(--text-secondary);">Today's Trades</span>
@@ -128,22 +146,35 @@
             Edit session details<i data-lucide="arrow-right" style="width:11px;height:11px;"></i>
           </a>
         </div>
-        {% if open_trades %}
+        {% if session_trades %}
         <div class="space-y-1.5">
-          {% for trade in open_trades %}
-          <div class="flex items-center justify-between px-3 py-2 rounded-lg border text-sm"
-               style="background:rgba(255,255,255,0.02);border-color:var(--border);">
+          {% for trade in session_trades %}
+          <a href="{% url 'trade_detail' trade.pk %}"
+             class="flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors"
+             style="background:rgba(255,255,255,0.02);border-color:var(--border);"
+             onmouseover="this.style.background='rgba(255,255,255,0.04)'"
+             onmouseout="this.style.background='rgba(255,255,255,0.02)'">
             <span class="font-medium" style="color:var(--text-primary);">
               {{ trade.symbol }} {{ trade.option_type }} <span class="mono">{{ trade.strike }}</span>
               <span class="text-xs ml-1" style="color:var(--text-secondary);">{{ trade.trade_type }}</span>
             </span>
-            <span class="text-xs px-2 py-0.5 rounded font-medium mono"
-                  style="background:var(--accent-glow);color:var(--accent);">OPEN</span>
-          </div>
+            <span class="flex items-center gap-2">
+              <span class="text-xs px-2 py-0.5 rounded font-medium mono"
+                    style="background:{% if trade.status == 'OPEN' %}var(--accent-glow){% elif trade.status == 'CLOSED' or trade.status == 'EXPIRED' %}var(--bg-elevated){% else %}var(--bg-elevated){% endif %};color:{% if trade.status == 'OPEN' %}var(--accent){% else %}var(--text-secondary){% endif %};">
+                {{ trade.status }}
+              </span>
+              {% if trade.pnl is not None %}
+              <span class="text-xs px-2 py-0.5 rounded font-medium mono"
+                    style="background:{% if trade.pnl > 0 %}var(--profit-glow){% elif trade.pnl < 0 %}var(--loss-glow){% else %}var(--bg-elevated){% endif %};color:{% if trade.pnl > 0 %}var(--profit){% elif trade.pnl < 0 %}var(--loss){% else %}var(--text-secondary){% endif %};">
+                {{ trade.pnl|pnl_str }}
+              </span>
+              {% endif %}
+            </span>
+          </a>
           {% endfor %}
         </div>
         {% else %}
-        <p class="text-sm italic" style="color:var(--text-muted);">No open trades</p>
+        <p class="text-sm italic" style="color:var(--text-muted);">No trades for this session</p>
         {% endif %}
       </div>
     </div>

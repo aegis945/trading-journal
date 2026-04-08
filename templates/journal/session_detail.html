@@ -9,6 +9,18 @@
   <!-- Pre-market notes form + trades -->
   <div class="col-span-2 space-y-5">
 
+    {% if not session.is_pre_market_complete %}
+    <div class="card p-4 animate-in" style="border:1px solid rgba(59,130,246,0.22);background:linear-gradient(135deg, rgba(59,130,246,0.14), rgba(59,130,246,0.05))">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-sm font-semibold" style="color:var(--text-primary)">This session still needs a plan.</p>
+          <p class="text-sm mt-1" style="color:var(--text-secondary)">Leave it blank until you're ready, but fill in the bias, mindset, and market context before you start trading.</p>
+        </div>
+        <span class="text-xs px-2 py-1 rounded-full whitespace-nowrap" style="background:rgba(255,255,255,0.08);color:var(--accent)">Needs setup</span>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="card p-5 animate-in">
       <h2 class="text-sm font-semibold mb-4" style="color:var(--text-primary)">Pre-Market Notes</h2>
       <form method="POST">
@@ -17,6 +29,9 @@
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">Market Bias</label>
             {{ form.market_bias }}
+            {% if not session.market_bias %}
+            <p class="text-xs mt-1" style="color:var(--text-muted)">Choose the directional read you want to carry into the session.</p>
+            {% endif %}
           </div>
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">VIX</label>
@@ -26,6 +41,9 @@
         <div class="mb-4">
           <label class="block text-xs mb-1" style="color:var(--text-secondary)">Psychological State (1–5)</label>
           {{ form.psychological_state }}
+          {% if not session.psychological_state %}
+          <p class="text-xs mt-1" style="color:var(--text-muted)">Quick self-check before the open so this day doesn't look complete by accident.</p>
+          {% endif %}
         </div>
         <div class="mb-4">
           <label class="block text-xs mb-1" style="color:var(--text-secondary)">Mental / Physical Notes</label>
@@ -34,10 +52,16 @@
         <div class="mb-4">
           <label class="block text-xs mb-1" style="color:var(--text-secondary)">Market Context Notes</label>
           {{ form.market_open_notes }}
+          {% if not session.market_open_notes %}
+          <p class="text-xs mt-1" style="color:var(--text-muted)">Capture the levels, conditions, or scenario that matter today.</p>
+          {% endif %}
         </div>
 
         <div class="pt-4 mt-2" style="border-top:1px solid var(--border)">
           <p class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Post-Session Reflection</p>
+          {% if trades and not session.has_post_session_reflection %}
+          <p class="text-xs mb-3" style="color:var(--text-muted)">You have trades on this date. Add a short reflection before you move on.</p>
+          {% endif %}
           <div class="mb-4">
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">Session Notes</label>
             {{ form.session_notes }}

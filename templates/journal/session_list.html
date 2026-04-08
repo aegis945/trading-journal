@@ -25,14 +25,14 @@
         </td>
         <td class="px-4 py-3 text-center">
           <span class="text-xs px-2 py-0.5 rounded-full"
-            style="{% if session.market_bias == 'BULLISH' %}background:var(--profit-glow);color:var(--profit);border:1px solid rgba(16,185,129,0.25){% elif session.market_bias == 'BEARISH' %}background:var(--loss-glow);color:var(--loss);border:1px solid rgba(244,63,94,0.25){% else %}background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border){% endif %}">
-            {{ session.market_bias }}
+            style="{% if session.market_bias == 'BULLISH' %}background:var(--profit-glow);color:var(--profit);border:1px solid rgba(16,185,129,0.25){% elif session.market_bias == 'BEARISH' %}background:var(--loss-glow);color:var(--loss);border:1px solid rgba(244,63,94,0.25){% elif session.market_bias %}background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border){% else %}background:rgba(59,130,246,0.08);color:var(--accent);border:1px solid rgba(59,130,246,0.18){% endif %}">
+            {{ session.market_bias|default:"Needs setup" }}
           </span>
         </td>
         <td class="px-4 py-3 text-center">
           <span class="mono font-semibold"
-            style="color:{% if session.psychological_state >= 4 %}var(--profit){% elif session.psychological_state == 3 %}var(--neutral){% else %}var(--loss){% endif %}">
-            {{ session.psychological_state }}/5
+            style="color:{% if session.psychological_state >= 4 %}var(--profit){% elif session.psychological_state == 3 %}var(--neutral){% elif session.psychological_state %}var(--loss){% else %}var(--text-muted){% endif %}">
+            {% if session.psychological_state %}{{ session.psychological_state }}/5{% else %}&mdash;{% endif %}
           </span>
         </td>
         <td class="px-4 py-3 text-right mono" style="color:var(--text-secondary)">
@@ -47,7 +47,7 @@
             class="text-xs font-medium transition-colors"
             style="color:var(--accent)"
             onmouseover="this.style.opacity='0.75'" onmouseout="this.style.opacity='1'">
-            View &rarr;
+            {% if session.is_pre_market_complete %}View{% else %}Review{% endif %} &rarr;
           </a>
         </td>
       </tr>

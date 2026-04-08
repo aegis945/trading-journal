@@ -94,6 +94,16 @@ class TradingSessionForm(forms.ModelForm):
             'lessons_learned':      forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['market_bias'].choices = [('', 'Select market bias')] + list(MarketBias.choices)
+        self.fields['psychological_state'].required = False
+        self.fields['psychological_state'].widget.attrs['placeholder'] = 'Rate 1-5'
+        self.fields['psychological_notes'].widget.attrs['placeholder'] = 'How are you showing up today?'
+        self.fields['market_open_notes'].widget.attrs['placeholder'] = 'What matters most before the open?'
+        self.fields['session_notes'].widget.attrs['placeholder'] = 'What stood out after the session?'
+        self.fields['lessons_learned'].widget.attrs['placeholder'] = 'What will you repeat or change next time?'
+
 
 class JournalEntryForm(forms.ModelForm):
     tags_text = forms.CharField(

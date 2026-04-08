@@ -74,14 +74,16 @@ class TradingSession(models.Model):
     date                 = models.DateField(unique=True)
     market_open_notes    = models.TextField(blank=True)
     psychological_state  = models.IntegerField(
-        default=3,
+        null=True,
+        blank=True,
         help_text='1 (worst) – 5 (best) mental state before trading',
     )
     psychological_notes  = models.TextField(blank=True)
     market_bias          = models.CharField(
         max_length=10,
         choices=MarketBias.choices,
-        default=MarketBias.NEUTRAL,
+        null=True,
+        blank=True,
     )
     vix_level            = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     pre_trade_checklist  = models.JSONField(
@@ -114,6 +116,21 @@ class TradingSession(models.Model):
     @property
     def win_count(self):
         return self.trades.filter(pnl__gt=0).count()
+
+    @property
+    def is_pre_market_complete(self):
+        return (
+            bool(self.market_bias)
+            and self.psychological_state is not None
+            and bool((self.market_open_notes or '').strip())
+        )
+
+    @property
+    def has_post_session_reflection(self):
+        return bool(
+            (self.session_notes or '').strip()
+            or (self.lessons_learned or '').strip()
+        )
 
 
 # ---------------------------------------------------------------------------
