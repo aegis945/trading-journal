@@ -292,24 +292,37 @@ def session_detail(request, date):
     except ValueError:
         return redirect('session_list')
 
-    session, _ = TradingSession.objects.get_or_create(date=session_date)
+    session = TradingSession.objects.filter(date=session_date).first()
+    is_new_session = session is None
 
-    try:
-        daily_routine = session.daily_routine
-    except DailyRoutine.DoesNotExist:
-        active_template = PreTradeChecklist.objects.filter(is_active=True).first()
-        daily_routine = DailyRoutine.objects.create(
-            session=session,
-            checklist_template=active_template,
-        )
+    if is_new_session:
+        session = TradingSession(date=session_date)
+        daily_routine = None
+        trades = Trade.objects.none()
+        total_pnl = Decimal('0')
+    else:
+        try:
+            daily_routine = session.daily_routine
+        except DailyRoutine.DoesNotExist:
+            active_template = PreTradeChecklist.objects.filter(is_active=True).first()
+            daily_routine = DailyRoutine.objects.create(
+                session=session,
+                checklist_template=active_template,
+            )
 
-    trades = session.trades.all()
-    total_pnl = session.total_pnl
+        trades = session.trades.all()
+        total_pnl = session.total_pnl
 
     if request.method == 'POST':
         form = TradingSessionForm(request.POST, instance=session)
         if form.is_valid():
-            form.save()
+            session = form.save()
+            if not hasattr(session, 'daily_routine'):
+                active_template = PreTradeChecklist.objects.filter(is_active=True).first()
+                daily_routine = DailyRoutine.objects.create(
+                    session=session,
+                    checklist_template=active_template,
+                )
             messages.success(request, 'Session updated.')
             return redirect('session_detail', date=date)
     else:

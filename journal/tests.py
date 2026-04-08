@@ -78,6 +78,15 @@ class TradingSessionEmptyStateTests(TestCase):
 		self.assertIsNone(session.psychological_state)
 		self.assertContains(response, 'Session setup was left blank.')
 
+	def test_future_session_page_does_not_create_session_on_get(self):
+		future_date = timezone.localdate() + datetime.timedelta(days=14)
+
+		response = self.client.get(reverse('session_detail', args=[future_date.isoformat()]))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertFalse(TradingSession.objects.filter(date=future_date).exists())
+		self.assertContains(response, 'This session still needs a plan.')
+
 
 class DashboardTagStatsTests(TestCase):
 	def test_single_tag_does_not_render_as_both_best_and_worst(self):
