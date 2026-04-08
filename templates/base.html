@@ -433,6 +433,35 @@
           </div>
           {% endif %}
 
+          {% if app_prompts %}
+          <div class="mb-5 space-y-2">
+            {% for prompt in app_prompts %}
+            <div class="rounded-xl border px-4 py-3 flex items-start justify-between gap-4 animate-in"
+                 style="background:{% if prompt.level == 'warning' %}rgba(245,158,11,0.08){% else %}rgba(59,130,246,0.08){% endif %};border-color:{% if prompt.level == 'warning' %}rgba(245,158,11,0.18){% else %}rgba(59,130,246,0.18){% endif %};">
+              <div class="flex items-start gap-3 min-w-0">
+                <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style="background:{% if prompt.level == 'warning' %}rgba(245,158,11,0.12){% else %}var(--accent-glow){% endif %};color:{% if prompt.level == 'warning' %}#f59e0b{% else %}var(--accent){% endif %};">
+                  <i data-lucide="{% if prompt.level == 'warning' %}triangle-alert{% else %}info{% endif %}" style="width:14px;height:14px;"></i>
+                </span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium" style="color:var(--text-primary)">{{ prompt.text }}</p>
+                  {% if prompt.detail %}
+                  <p class="text-xs mt-1" style="color:var(--text-secondary)">{{ prompt.detail }}</p>
+                  {% endif %}
+                </div>
+              </div>
+              {% if prompt.url %}
+              <a href="{{ prompt.url }}"
+                 class="text-xs font-medium whitespace-nowrap"
+                 style="color:{% if prompt.level == 'warning' %}#f59e0b{% else %}var(--accent){% endif %};">
+                {{ prompt.label|default:"Open" }} →
+              </a>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
           {% block content %}{% endblock %}
         </main>
       </div>

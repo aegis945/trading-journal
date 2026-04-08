@@ -17,6 +17,7 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Avg, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
 
@@ -118,6 +119,24 @@ def dashboard(request):
     # Recent journal entries
     recent_journal = JournalEntry.objects.select_related('trade', 'session').order_by('-created_at')[:5]
 
+    app_prompts = []
+    if session and not session.is_pre_market_complete:
+        app_prompts.append({
+            'level': 'info',
+            'text': "Today's session plan is still blank.",
+            'detail': 'Set your bias, mindset, and market context before the session gets going.',
+            'url': reverse('session_detail', args=[session.date.isoformat()]),
+            'label': 'Fill it out',
+        })
+    if session and session_trades.exists() and not session.has_post_session_reflection:
+        app_prompts.append({
+            'level': 'warning',
+            'text': 'This session has trades but no reflection.',
+            'detail': 'Capture what you learned while the context is still fresh.',
+            'url': reverse('session_detail', args=[session.date.isoformat()]),
+            'label': 'Add reflection',
+        })
+
     context = {
         'session': session,
         'session_date': today,
@@ -134,6 +153,7 @@ def dashboard(request):
         'streak_type': streak_type,
         'tag_stats': tag_stats,
         'recent_journal': recent_journal,
+        'app_prompts': app_prompts,
         'trade_form': TradeForm(initial={'trade_date': previous_market_day(today), 'expiry': previous_market_day(today), 'symbol': 'SPX'}),
         'is_market_closed': is_market_closed,
         'market_closed_label': market_closed_label(today),

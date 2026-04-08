@@ -30,6 +30,7 @@ class TradingSessionEmptyStateTests(TestCase):
 		self.assertIsNone(session.market_bias)
 		self.assertIsNone(session.psychological_state)
 		self.assertContains(response, "Today's session plan is still blank.")
+		self.assertContains(response, 'Fill it out')
 
 	def test_dashboard_shows_closed_trade_in_todays_trades(self):
 		trade_date = _market_day()
@@ -136,6 +137,36 @@ class TradingSessionEmptyStateTests(TestCase):
 
 		self.assertFalse(TradingSession.objects.filter(date=holiday).exists())
 		self.assertContains(response, 'Christmas Day is a market holiday')
+
+	def test_dashboard_prompts_for_missing_post_session_reflection_when_trades_exist(self):
+		trade_date = _market_day()
+		session = TradingSession.objects.create(
+			date=trade_date,
+			market_bias='BULLISH',
+			psychological_state=4,
+			market_open_notes='Ready for the open.',
+		)
+		Trade.objects.create(
+			session=session,
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 0),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+		)
+
+		with patch('journal.views.timezone.localdate', return_value=trade_date):
+			response = self.client.get(reverse('dashboard'))
+
+		self.assertContains(response, 'This session has trades but no reflection.')
+		self.assertContains(response, 'Add reflection')
 
 
 class DashboardTagStatsTests(TestCase):
@@ -886,3 +917,28 @@ class WeeklyReviewTests(TestCase):
 		self.assertContains(response, 'Losing trade 2')
 		self.assertContains(response, 'Losing trade 3')
 		self.assertNotContains(response, 'Losing trade 4')
+
+	def test_weekly_review_prompts_for_missing_weekly_note_when_rule_breaks_exist(self):
+		trade_date = datetime.date(2026, 4, 8)
+		for index in range(3):
+			Trade.objects.create(
+				trade_date=trade_date,
+				symbol='SPX',
+				option_type=OptionType.PUT,
+				strike=f'678{index}',
+				expiry=trade_date,
+				quantity=1,
+				entry_price='5.00',
+				exit_price='4.00',
+				entry_time=datetime.time(9, 30 + index),
+				exit_time=datetime.time(9, 45 + index),
+				trade_type=TradeType.LONG_PUT,
+				status=TradeStatus.CLOSED,
+				rule_review=RuleReview.BROKE,
+				rule_break_tags=['early entry'],
+			)
+
+		response = self.client.get(reverse('performance_review'), {'week': '2026-04-08'})
+
+		self.assertContains(response, 'This week has 3 rule-break trades and no weekly note.')
+		self.assertContains(response, 'Write note')

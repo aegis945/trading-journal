@@ -13,6 +13,7 @@ from decimal import Decimal
 from django.db.models import Avg, Count, Sum, Q
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.utils import timezone
 
 from journal.models import EntryType, ProcessMetric, RuleReview, Trade, TradingSession, TradeStatus, JournalEntry, calculate_process_metrics
@@ -88,6 +89,18 @@ def performance_review(request):
         if count:
             journal_type_counts.append({'label': label, 'count': count})
 
+    standalone_weekly_notes_count = journal_entries.filter(trade__isnull=True, session__isnull=True).count()
+    rule_break_trade_count = closed_week_trades.filter(rule_review=RuleReview.BROKE).count()
+    app_prompts = []
+    if rule_break_trade_count and not standalone_weekly_notes_count:
+        app_prompts.append({
+            'level': 'warning',
+            'text': f'This week has {rule_break_trade_count} rule-break trade{pluralize_count(rule_break_trade_count)} and no weekly note.',
+            'detail': 'A short weekly note helps turn repeated mistakes into something actionable.',
+            'url': reverse('journal_new'),
+            'label': 'Write note',
+        })
+
     context = {
         'week_start': week_start,
         'week_end': week_end,
@@ -115,8 +128,13 @@ def performance_review(request):
         'journal_entries': journal_entries.order_by('-created_at'),
         'journal_type_counts': journal_type_counts,
         'linked_trade_journal_count': linked_trade_journal_count,
+        'app_prompts': app_prompts,
     }
     return render(request, 'analytics/review.html', context)
+
+
+def pluralize_count(value):
+    return '' if value == 1 else 's'
 
 
 def _sorted_counter_items(counter):
