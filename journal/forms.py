@@ -2,11 +2,12 @@
 journal/forms.py
 """
 import json
+from decimal import Decimal
 from django import forms
 from .models import (
     Trade, TradingSession, JournalEntry,
     PreTradeChecklist, PerformanceGoal, AppPreferences,
-    OptionType, TradeType, TradeStatus, MarketBias, RuleReview, is_market_closed_day,
+    OptionType, ProcessMetric, TradeType, TradeStatus, MarketBias, RuleReview, is_market_closed_day,
 )
 
 
@@ -198,12 +199,13 @@ class PerformanceGoalForm(forms.ModelForm):
     class Meta:
         model  = PerformanceGoal
         fields = [
-            'title', 'description', 'metric', 'target_value', 'current_value',
+            'title', 'description', 'process_metric', 'metric', 'target_value', 'current_value',
             'period', 'start_date', 'end_date', 'status',
         ]
         widgets = {
             'title':         forms.TextInput(attrs={'class': _INPUT_CLASSES, 'placeholder': 'Follow the rules'}),
             'description':   forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3', 'placeholder': 'Describe what success looks like for this goal.'}),
+            'process_metric': forms.Select(attrs={'class': _SELECT_CLASSES}),
             'metric':        forms.Select(attrs={'class': _SELECT_CLASSES}),
             'target_value':  forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01', 'placeholder': 'Optional for process goals'}),
             'current_value': forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01', 'placeholder': 'Optional for process goals'}),
@@ -215,27 +217,41 @@ class PerformanceGoalForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['process_metric'].required = False
         self.fields['metric'].required = False
         self.fields['target_value'].required = False
         self.fields['current_value'].required = False
         self.fields['end_date'].required = False
+        self.fields['process_metric'].choices = [('', 'Simple process goal (no automatic tracking)')] + list(ProcessMetric.choices)
+        self.fields['process_metric'].help_text = 'Use this when the app should score the goal automatically from your trades and sessions.'
         self.fields['metric'].choices = [('', 'Process goal (no metric)')] + list(self.fields['metric'].choices)
         self.fields['metric'].help_text = 'Leave blank for goals like "Follow the rules" or "Stay patient".'
-        self.fields['target_value'].help_text = 'Use only for measurable goals like win rate, total P&L, or trade count.'
-        self.fields['current_value'].help_text = 'Optional progress value for measurable goals.'
+        self.fields['target_value'].help_text = 'Optional target. For process tracking, use a percentage target like 85 or 90.'
+        self.fields['current_value'].help_text = 'Used only for manual measurable goals. Process-tracked goals calculate this automatically.'
         self.fields['end_date'].help_text = 'Optional. Leave blank for open-ended goals.'
         self.fields['title'].label = 'Goal'
 
     def clean(self):
         cleaned_data = super().clean()
+        process_metric = cleaned_data.get('process_metric')
         metric = cleaned_data.get('metric')
         target_value = cleaned_data.get('target_value')
         current_value = cleaned_data.get('current_value')
 
+        if process_metric and metric:
+            self.add_error('process_metric', 'Choose either process tracking or a measurable metric, not both.')
+            self.add_error('metric', 'Choose either a measurable metric or process tracking, not both.')
+
+        if process_metric and target_value is not None and not (Decimal('0') < target_value <= Decimal('100')):
+            self.add_error('target_value', 'Process-tracked goals use percentage targets between 0 and 100.')
+
         if metric and target_value is None:
             self.add_error('target_value', 'Set a target for measurable goals.')
 
-        if not metric:
+        if process_metric:
+            cleaned_data['metric'] = None
+            cleaned_data['current_value'] = None
+        elif not metric:
             cleaned_data['target_value'] = None
             cleaned_data['current_value'] = None
         elif target_value is None and current_value is not None:

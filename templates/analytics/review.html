@@ -74,7 +74,12 @@
         <i data-lucide="clipboard-list" style="width:14px;height:14px;color:var(--text-secondary);"></i>
         <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Week At A Glance</h3>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+        <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
+          <p style="color:var(--text-muted)">Process Score</p>
+          <p class="mono text-lg mt-1" style="color:var(--text-primary)">{% if stats.process_score is not None %}{{ stats.process_score }}%{% else %}—{% endif %}</p>
+          <p class="text-xs mt-1" style="color:var(--text-secondary)">Average of rule-follow, prep, and review completion</p>
+        </div>
         <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
           <p style="color:var(--text-muted)">Rule Follow Rate</p>
           <p class="mono text-lg mt-1" style="color:var(--text-primary)">{% if stats.rule_follow_rate is not None %}{{ stats.rule_follow_rate }}%{% else %}—{% endif %}</p>

@@ -24,6 +24,20 @@
     </div>
 
     <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
+      <p class="text-sm font-medium mb-1" style="color:var(--text-primary)">Optional process tracking</p>
+      <p class="text-xs mb-3" style="color:var(--text-secondary)">For goals like following rules or completing reviews, let the app score progress from the sessions and trades you already log.</p>
+
+      <div>
+        <label class="block text-xs font-medium mb-1" style="color:var(--text-secondary)">{{ form.process_metric.label }}</label>
+        {{ form.process_metric }}
+        {% if form.process_metric.help_text %}<p class="mt-1 text-xs" style="color:var(--text-muted)">{{ form.process_metric.help_text }}</p>{% endif %}
+        {% if form.process_metric.errors %}
+        <p class="mt-1 text-xs" style="color:var(--loss)">{{ form.process_metric.errors|join:", " }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="rounded-xl p-4" style="background:var(--bg-elevated);border:1px solid var(--border)">
       <p class="text-sm font-medium mb-1" style="color:var(--text-primary)">Optional measurable target</p>
       <p class="text-xs mb-3" style="color:var(--text-secondary)">Leave these blank for process goals. Use them only if this goal should track a specific number.</p>
 

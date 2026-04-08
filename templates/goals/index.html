@@ -41,18 +41,34 @@
     {% if goal.description %}
     <p class="text-sm mb-4" style="color:var(--text-secondary)">{{ goal.description }}</p>
     {% endif %}
-    {% if goal.is_quantitative and goal.current_value is not None %}
+    {% if goal.is_quantitative and goal.computed_current_value is not None %}
     <div class="flex items-center gap-3">
       <div class="flex-1 rounded-full" style="height:6px;background:var(--bg-base)">
         <div class="rounded-full transition-all duration-500"
           style="height:6px;width:{{ goal.progress_percent|default:0|floatformat:0 }}%;background:{% if goal.is_met %}var(--profit){% else %}var(--accent){% endif %}"></div>
       </div>
       <span class="mono text-xs whitespace-nowrap" style="color:var(--text-secondary)">
-        {{ goal.current_value|floatformat:2 }} / {{ goal.target_value }}
+        {{ goal.computed_current_value|floatformat:2 }} / {{ goal.target_value }}
       </span>
       {% if goal.is_met %}
       <span class="text-xs font-medium" style="color:var(--profit)">✓ Met</span>
       {% endif %}
+    </div>
+    {% elif goal.is_process_tracked and goal.computed_current_value is not None %}
+    <div class="space-y-2">
+      <div class="flex items-center gap-3">
+        <div class="flex-1 rounded-full" style="height:6px;background:var(--bg-base)">
+          <div class="rounded-full transition-all duration-500"
+            style="height:6px;width:{{ goal.progress_percent|default:0|floatformat:0 }}%;background:{% if goal.is_met %}var(--profit){% else %}var(--accent){% endif %}"></div>
+        </div>
+        <span class="mono text-xs whitespace-nowrap" style="color:var(--text-secondary)">
+          {% if goal.target_value %}{{ goal.computed_current_value|floatformat:1 }} / {{ goal.target_value|floatformat:1 }}%{% else %}{{ goal.computed_current_value|floatformat:1 }}%{% endif %}
+        </span>
+        {% if goal.is_met %}
+        <span class="text-xs font-medium" style="color:var(--profit)">✓ Met</span>
+        {% endif %}
+      </div>
+      <p class="text-xs" style="color:var(--text-muted)">Auto-scored from your logged trades and sessions.</p>
     </div>
     {% else %}
     <div class="text-xs px-3 py-2 rounded-lg inline-flex items-center gap-2" style="background:var(--bg-elevated);color:var(--text-secondary)">

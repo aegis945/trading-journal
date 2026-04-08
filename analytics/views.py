@@ -15,7 +15,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 
-from journal.models import EntryType, RuleReview, Trade, TradingSession, TradeStatus, JournalEntry
+from journal.models import EntryType, ProcessMetric, RuleReview, Trade, TradingSession, TradeStatus, JournalEntry, calculate_process_metrics
 
 
 def analytics_index(request):
@@ -41,10 +41,9 @@ def performance_review(request):
     total_pnl = closed_week_trades.aggregate(total=Sum('pnl'))['total'] or Decimal('0')
     avg_rr = closed_week_trades.filter(risk_reward_ratio__isnull=False).aggregate(avg=Avg('risk_reward_ratio'))['avg']
     avg_rr = round(float(avg_rr), 2) if avg_rr is not None else None
-    reviewed_trades = closed_week_trades.filter(rule_review__in=[RuleReview.FOLLOWED, RuleReview.BROKE])
-    reviewed_count = reviewed_trades.count()
-    followed_count = reviewed_trades.filter(rule_review=RuleReview.FOLLOWED).count()
-    followed_rate = round(followed_count / reviewed_count * 100, 1) if reviewed_count else None
+    process_metrics = calculate_process_metrics(week_start, week_end)
+    reviewed_count = process_metrics['reviewed_trade_count']
+    followed_rate = process_metrics[ProcessMetric.FOLLOW_RULES]
 
     best_trades = list(
         closed_week_trades.filter(pnl__gt=0).order_by('-pnl', '-trade_date', '-entry_time')[:3]
@@ -79,8 +78,8 @@ def performance_review(request):
             'journal_count': journal_entries.filter(session=session).count() if session else 0,
         })
 
-    session_prep_completed = sum(1 for session in sessions if session.is_pre_market_complete)
-    session_reflections_completed = sum(1 for session in sessions if session.has_post_session_reflection)
+    session_prep_completed = process_metrics['session_prep_completed']
+    session_reflections_completed = process_metrics['session_review_completed']
     linked_trade_journal_count = journal_entries.filter(trade__isnull=False).count()
 
     journal_type_counts = []
@@ -100,6 +99,7 @@ def performance_review(request):
             'total_trades': total_trades,
             'closed_trades': closed_trade_count,
             'avg_rr': avg_rr,
+            'process_score': process_metrics[ProcessMetric.PROCESS_SCORE],
             'rule_follow_rate': followed_rate,
             'reviewed_trade_count': reviewed_count,
             'journal_entries': journal_entries.count(),

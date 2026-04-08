@@ -205,6 +205,13 @@ class GoalMetric(models.TextChoices):
     TRADE_COUNT  = 'TRADE_COUNT',  'Trade Count'
 
 
+class ProcessMetric(models.TextChoices):
+    PROCESS_SCORE = 'PROCESS_SCORE', 'Overall Process Score (%)'
+    FOLLOW_RULES = 'FOLLOW_RULES', 'Follow Rules (%)'
+    SESSION_PREP = 'SESSION_PREP', 'Session Prep Completion (%)'
+    SESSION_REVIEW = 'SESSION_REVIEW', 'Session Review Completion (%)'
+
+
 class GoalPeriod(models.TextChoices):
     WEEKLY    = 'WEEKLY',    'Weekly'
     MONTHLY   = 'MONTHLY',   'Monthly'
@@ -557,6 +564,7 @@ class PerformanceGoal(models.Model):
     title         = models.CharField(max_length=200)
     description   = models.TextField(blank=True)
     metric        = models.CharField(max_length=20, choices=GoalMetric.choices, null=True, blank=True)
+    process_metric = models.CharField(max_length=20, choices=ProcessMetric.choices, null=True, blank=True)
     target_value  = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     current_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     period        = models.CharField(max_length=12, choices=GoalPeriod.choices)
@@ -574,13 +582,17 @@ class PerformanceGoal(models.Model):
 
     @property
     def progress_percent(self):
-        if self.target_value in (None, 0) or self.current_value is None:
+        current_value = self.computed_current_value
+        if current_value is None:
             return 0
-        pct = float(self.current_value) / float(self.target_value) * 100
+        target_value = self.target_value if self.target_value not in (None, 0) else Decimal('100')
+        pct = float(current_value) / float(target_value) * 100
         return min(round(pct, 1), 100.0)
 
     @property
     def metric_display(self):
+        if self.process_metric:
+            return self.get_process_metric_display()
         if not self.metric:
             return 'Process Goal'
         return self.get_metric_display()
@@ -594,9 +606,64 @@ class PerformanceGoal(models.Model):
         return bool(self.metric and self.target_value is not None)
 
     @property
+    def is_process_tracked(self):
+        return bool(self.process_metric)
+
+    @property
+    def active_end_date(self):
+        return self.end_date or timezone.localdate()
+
+    @property
+    def computed_current_value(self):
+        if self.process_metric:
+            metrics = calculate_process_metrics(self.start_date, self.active_end_date)
+            process_value = metrics.get(self.process_metric)
+            return Decimal(str(process_value)) if process_value is not None else None
+        return self.current_value
+
+    @property
     def is_met(self):
         if self.status == GoalStatus.ACHIEVED:
             return True
-        if not self.is_quantitative or self.current_value is None:
+        current_value = self.computed_current_value
+        if current_value is None or self.target_value is None:
             return False
-        return self.current_value >= self.target_value
+        return current_value >= self.target_value
+
+
+def calculate_process_metrics(start_date, end_date):
+    sessions = list(TradingSession.objects.filter(date__range=(start_date, end_date)))
+    session_count = len(sessions)
+    session_prep_completed = sum(1 for session in sessions if session.is_pre_market_complete)
+    session_review_completed = sum(1 for session in sessions if session.has_post_session_reflection)
+
+    reviewed_trades = Trade.objects.filter(
+        trade_date__range=(start_date, end_date),
+        status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
+        rule_review__in=[RuleReview.FOLLOWED, RuleReview.BROKE],
+    )
+    reviewed_trade_count = reviewed_trades.count()
+    followed_trade_count = reviewed_trades.filter(rule_review=RuleReview.FOLLOWED).count()
+
+    def _percentage(part, total):
+        if not total:
+            return None
+        return round(part / total * 100, 1)
+
+    rule_follow_rate = _percentage(followed_trade_count, reviewed_trade_count)
+    session_prep_rate = _percentage(session_prep_completed, session_count)
+    session_review_rate = _percentage(session_review_completed, session_count)
+
+    component_rates = [rate for rate in [rule_follow_rate, session_prep_rate, session_review_rate] if rate is not None]
+    process_score = round(sum(component_rates) / len(component_rates), 1) if component_rates else None
+
+    return {
+        ProcessMetric.PROCESS_SCORE: process_score,
+        ProcessMetric.FOLLOW_RULES: rule_follow_rate,
+        ProcessMetric.SESSION_PREP: session_prep_rate,
+        ProcessMetric.SESSION_REVIEW: session_review_rate,
+        'session_count': session_count,
+        'reviewed_trade_count': reviewed_trade_count,
+        'session_prep_completed': session_prep_completed,
+        'session_review_completed': session_review_completed,
+    }

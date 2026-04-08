@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import PerformanceGoalForm, TradeForm, TradingSessionForm
-from .models import AppPreferences, EntryType, JournalEntry, OptionType, PerformanceGoal, RuleReview, Trade, TradeStatus, TradeType, TradingSession
+from .models import AppPreferences, EntryType, JournalEntry, OptionType, PerformanceGoal, ProcessMetric, RuleReview, Trade, TradeStatus, TradeType, TradingSession, calculate_process_metrics
 from .templatetags.journal_extras import pnl_str
 from .views import _compute_tag_stats
 
@@ -432,10 +432,44 @@ class DisplayCurrencyPreferenceTests(TestCase):
 
 
 class PerformanceGoalTests(TestCase):
+	def test_calculate_process_metrics_returns_scored_percentages(self):
+		trade_date = datetime.date(2026, 4, 8)
+		session = TradingSession.objects.create(
+			date=trade_date,
+			market_bias='BULLISH',
+			psychological_state=4,
+			market_open_notes='Ready for the open.',
+			session_notes='Reviewed the session afterward.',
+		)
+		Trade.objects.create(
+			session=session,
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 0),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.FOLLOWED,
+		)
+
+		metrics = calculate_process_metrics(trade_date, trade_date)
+
+		self.assertEqual(metrics[ProcessMetric.FOLLOW_RULES], 100.0)
+		self.assertEqual(metrics[ProcessMetric.SESSION_PREP], 100.0)
+		self.assertEqual(metrics[ProcessMetric.SESSION_REVIEW], 100.0)
+		self.assertEqual(metrics[ProcessMetric.PROCESS_SCORE], 100.0)
+
 	def test_process_goal_form_allows_non_numeric_goal(self):
 		form = PerformanceGoalForm(data={
 			'title': 'Follow the rules',
 			'description': 'Execute only valid setups and skip revenge trades.',
+			'process_metric': '',
 			'metric': '',
 			'target_value': '',
 			'current_value': '',
@@ -451,6 +485,27 @@ class PerformanceGoalTests(TestCase):
 		self.assertIsNone(goal.target_value)
 		self.assertIsNone(goal.current_value)
 		self.assertIsNone(goal.end_date)
+		self.assertIsNone(goal.process_metric)
+
+	def test_process_goal_form_allows_automatic_process_tracking(self):
+		form = PerformanceGoalForm(data={
+			'title': 'Follow the rules',
+			'description': 'Let the app score my process discipline.',
+			'process_metric': ProcessMetric.FOLLOW_RULES,
+			'metric': '',
+			'target_value': '90',
+			'current_value': '',
+			'period': 'WEEKLY',
+			'start_date': '2026-04-06',
+			'end_date': '',
+			'status': 'ACTIVE',
+		})
+
+		self.assertTrue(form.is_valid(), form.errors)
+		goal = form.save()
+		self.assertEqual(goal.process_metric, ProcessMetric.FOLLOW_RULES)
+		self.assertIsNone(goal.metric)
+		self.assertIsNone(goal.current_value)
 
 	def test_goal_form_allows_missing_end_date_for_quantitative_goal(self):
 		form = PerformanceGoalForm(data={
@@ -498,6 +553,47 @@ class PerformanceGoalTests(TestCase):
 		self.assertContains(response, 'Follow the rules')
 		self.assertContains(response, 'Process Goal')
 		self.assertNotContains(response, 'target None')
+
+	def test_goals_page_renders_tracked_process_goal_progress(self):
+		trade_date = datetime.date(2026, 4, 8)
+		session = TradingSession.objects.create(
+			date=trade_date,
+			market_bias='BULLISH',
+			psychological_state=4,
+			market_open_notes='Prepared before the bell.',
+		)
+		Trade.objects.create(
+			session=session,
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 0),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.FOLLOWED,
+		)
+		PerformanceGoal.objects.create(
+			title='Rules first',
+			description='Track weekly rule-follow rate.',
+			process_metric=ProcessMetric.FOLLOW_RULES,
+			target_value=Decimal('90'),
+			period='WEEKLY',
+			start_date=datetime.date(2026, 4, 6),
+			status='ACTIVE',
+		)
+
+		response = self.client.get(reverse('goals'))
+
+		self.assertContains(response, 'Rules first')
+		self.assertContains(response, 'Follow Rules (%)')
+		self.assertContains(response, '100.0 / 90.0%')
+		self.assertContains(response, 'Auto-scored from your logged trades and sessions.')
 
 
 class RuleTrackingAnalyticsTests(TestCase):
@@ -681,6 +777,7 @@ class WeeklyReviewTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'Weekly Review')
 		self.assertContains(response, '+$200.00')
+		self.assertContains(response, 'Process Score')
 		self.assertContains(response, '100.0%')
 		self.assertContains(response, 'Opening drive')
 		self.assertContains(response, 'Stayed patient and only took one clean setup.')
