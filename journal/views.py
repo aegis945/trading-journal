@@ -184,7 +184,7 @@ def trade_list(request):
 
 def trade_add(request):
     if request.method == 'POST':
-        form = TradeForm(request.POST)
+        form = TradeForm(request.POST, request.FILES)
         if form.is_valid():
             trade = form.save()
             messages.success(request, f'Trade saved: {trade}')
@@ -200,7 +200,7 @@ def trade_quick_add(request):
     today = timezone.localdate()
     form = TradeForm(initial={'trade_date': today, 'expiry': today, 'symbol': 'SPX'})
     if request.method == 'POST':
-        form = TradeForm(request.POST)
+        form = TradeForm(request.POST, request.FILES)
         if form.is_valid():
             trade = form.save()
             # Return empty modal + trigger dashboard refresh
@@ -222,7 +222,7 @@ def trade_detail(request, pk):
 def trade_edit(request, pk):
     trade = get_object_or_404(Trade, pk=pk)
     if request.method == 'POST':
-        form = TradeForm(request.POST, instance=trade)
+        form = TradeForm(request.POST, request.FILES, instance=trade)
         if form.is_valid():
             form.save()
             messages.success(request, 'Trade updated.')

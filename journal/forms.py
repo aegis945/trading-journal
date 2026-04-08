@@ -56,6 +56,7 @@ class TradeForm(forms.ModelForm):
             'setup_quality':          forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'min': '1', 'max': '5', 'placeholder': '3'}),
             'trade_notes':            forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3', 'placeholder': 'Pre-trade rationale…'}),
             'exit_notes':             forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3', 'placeholder': 'What happened…'}),
+            'ta_screenshot':          forms.ClearableFileInput(attrs={'class': _INPUT_CLASSES, 'accept': 'image/*'}),
             'ibkr_trade_id':          forms.TextInput(attrs={'class': _INPUT_CLASSES}),
         }
 

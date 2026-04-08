@@ -21,7 +21,7 @@ HTMX modal for quick trade entry from the topbar "+ Trade" button.
         onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
     </div>
 
-    <form method="POST"
+    <form method="POST" enctype="multipart/form-data"
       hx-post="{% url 'trade_quick_add' %}"
       hx-target="#modal-container"
       hx-swap="innerHTML"
@@ -73,6 +73,11 @@ HTMX modal for quick trade entry from the topbar "+ Trade" button.
         </div>
       </div>
       <div>{{ form.strategy_tags_text.label_tag }}{{ form.strategy_tags_text }}</div>
+      <div>
+        {{ form.ta_screenshot.label_tag }}
+        {{ form.ta_screenshot }}
+        <p class="mt-1 text-xs" style="color:var(--text-muted)">Optional chart screenshot.</p>
+      </div>
       <div>{{ form.trade_notes.label_tag }}{{ form.trade_notes }}</div>
 
       {% if form.errors %}

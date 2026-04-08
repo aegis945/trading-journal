@@ -140,6 +140,21 @@
         {% endfor %}
       </div>
       {% endif %}
+
+      {% if trade.ta_screenshot %}
+      <div class="mt-5">
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs uppercase tracking-widest" style="color:var(--text-secondary);">TA Screenshot</p>
+          <a href="{{ trade.ta_screenshot.url }}" target="_blank" rel="noopener noreferrer"
+             class="text-xs" style="color:var(--accent)">Open full size</a>
+        </div>
+        <a href="{{ trade.ta_screenshot.url }}" target="_blank" rel="noopener noreferrer"
+           class="block overflow-hidden rounded-xl border"
+           style="border-color:var(--border);background:rgba(255,255,255,0.02);">
+          <img src="{{ trade.ta_screenshot.url }}" alt="TA screenshot for {{ trade }}" class="w-full h-auto block" />
+        </a>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Greeks card -->

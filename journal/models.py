@@ -214,6 +214,12 @@ class Trade(models.Model):
     )
     trade_notes   = models.TextField(blank=True, help_text='Pre-trade rationale')
     exit_notes    = models.TextField(blank=True, help_text='Post-exit commentary')
+    ta_screenshot = models.ImageField(
+        upload_to='trade_ta/',
+        null=True,
+        blank=True,
+        help_text='Optional technical analysis screenshot for this trade',
+    )
 
     # Import tracking
     ibkr_trade_id = models.CharField(

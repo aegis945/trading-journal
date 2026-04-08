@@ -6,7 +6,7 @@
 
 <div class="max-w-3xl" x-data="tradeForm()">
   <div class="card p-6 animate-in">
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
       {% csrf_token %}
 
       <!-- Section: Basic -->
@@ -175,6 +175,41 @@
         <div class="mb-4">
           <label class="block text-xs mb-1" style="color:var(--text-secondary)">Trade Notes (rationale)</label>
           {{ form.trade_notes }}
+        </div>
+        <div class="mb-4">
+          <label class="block text-xs mb-1" style="color:var(--text-secondary)">TA Screenshot</label>
+          <div class="rounded-xl border p-4" style="background:rgba(255,255,255,0.02);border-color:var(--border)">
+            <input type="file"
+                   name="ta_screenshot"
+                   id="id_ta_screenshot"
+                   accept="image/*"
+                   class="block w-full text-sm"
+                   style="color:var(--text-primary)" />
+            <p class="text-xs mt-2" style="color:var(--text-muted)">Optional. Upload a chart or markup image for this setup.</p>
+
+            {% if form.instance.ta_screenshot %}
+            <div class="mt-4 rounded-xl border p-3" style="background:var(--bg-base);border-color:var(--border)">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-xs uppercase tracking-wider" style="color:var(--text-muted)">Saved Screenshot</p>
+                  <a href="{{ form.instance.ta_screenshot.url }}" target="_blank" rel="noopener noreferrer"
+                     class="inline-flex items-center gap-1 mt-1 text-sm"
+                     style="color:var(--accent)">
+                    <i data-lucide="image" style="width:12px;height:12px"></i> Open image
+                  </a>
+                </div>
+                <label class="inline-flex items-center gap-2 text-xs cursor-pointer" style="color:var(--text-secondary)">
+                  <input type="checkbox"
+                         name="ta_screenshot-clear"
+                         id="ta_screenshot-clear_id"
+                         class="w-4 h-4 rounded"
+                         style="accent-color:var(--accent)" />
+                  Remove screenshot
+                </label>
+              </div>
+            </div>
+            {% endif %}
+          </div>
         </div>
         <div>
           <label class="block text-xs mb-1" style="color:var(--text-secondary)">Exit Notes</label>
