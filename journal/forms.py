@@ -252,3 +252,48 @@ class AppPreferencesForm(forms.ModelForm):
                 'style': 'background:var(--bg-elevated);',
             }),
         }
+
+
+class RuleBreakSettingsForm(forms.ModelForm):
+    rule_break_tag_templates_text = forms.CharField(
+        required=False,
+        label='Preset rule-break tags',
+        help_text='One tag per line. These show up as quick-pick chips in trade entry.',
+        widget=forms.Textarea(attrs={
+            'class': _TEXTAREA_CLASSES,
+            'rows': '6',
+            'placeholder': 'early entry\noversized\nrevenge trade',
+        }),
+    )
+
+    class Meta:
+        model = AppPreferences
+        fields = []
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        instance = kwargs.get('instance') or self.instance
+        if instance:
+            self.fields['rule_break_tag_templates_text'].initial = '\n'.join(instance.normalized_rule_break_tag_templates)
+
+    def clean_rule_break_tag_templates_text(self):
+        raw = self.cleaned_data.get('rule_break_tag_templates_text', '')
+        tags = []
+        seen = set()
+        for chunk in raw.replace(',', '\n').splitlines():
+            tag = chunk.strip()
+            if not tag:
+                continue
+            lowered = tag.lower()
+            if lowered in seen:
+                continue
+            seen.add(lowered)
+            tags.append(tag)
+        return tags
+
+    def save(self, commit=True):
+        preferences = self.instance
+        preferences.rule_break_tag_templates = self.cleaned_data['rule_break_tag_templates_text']
+        if commit:
+            preferences.save()
+        return preferences

@@ -227,6 +227,42 @@ class TradeListTagFilterTests(TestCase):
 		self.assertContains(response, 'Gap rules')
 		self.assertContains(response, 'Opening drive')
 
+	def test_trade_list_filters_by_rule_review(self):
+		trade_date = _market_day()
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			entry_time=datetime.time(9, 30),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.OPEN,
+			rule_review=RuleReview.FOLLOWED,
+		)
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='QQQ',
+			option_type=OptionType.PUT,
+			strike='430',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='4.00',
+			entry_time=datetime.time(11, 0),
+			trade_type=TradeType.LONG_PUT,
+			status=TradeStatus.OPEN,
+			rule_review=RuleReview.BROKE,
+			rule_break_tags=['early entry'],
+		)
+
+		response = self.client.get(reverse('trade_list'), {'rule_review': 'BROKE'})
+
+		self.assertContains(response, 'QQQ')
+		self.assertNotContains(response, 'SPX')
+		self.assertContains(response, 'Rules')
+
 	def test_trade_form_rejects_weekend_trade_date(self):
 		form = TradeForm(data={
 			'trade_date': '2026-04-11',
@@ -375,6 +411,18 @@ class DisplayCurrencyPreferenceTests(TestCase):
 		self.assertEqual(preferences.convert_pnl_value(Decimal('100')), Decimal('91.00'))
 		mocked_fetch_rate.assert_called_once()
 
+	def test_settings_page_updates_rule_break_presets(self):
+		response = self.client.post(reverse('settings_index'), {
+			'save_rule_break_tags': '1',
+			'rule_break_tag_templates_text': 'early entry\noversized\nrevenge trade',
+		}, follow=True)
+
+		preferences = AppPreferences.objects.get(pk=1)
+
+		self.assertEqual(preferences.rule_break_tag_templates, ['early entry', 'oversized', 'revenge trade'])
+		self.assertContains(response, 'Rule-break presets updated.')
+		self.assertContains(response, 'revenge trade')
+
 
 class PerformanceGoalTests(TestCase):
 	def test_process_goal_form_allows_non_numeric_goal(self):
@@ -512,3 +560,74 @@ class RuleTrackingAnalyticsTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertIn('oversized', payload['labels'])
 		self.assertIn('early entry', payload['labels'])
+
+
+class DashboardRuleMetricTests(TestCase):
+	def test_dashboard_shows_rule_metrics(self):
+		trade_date = _market_day()
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='7.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(10, 15),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.FOLLOWED,
+		)
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='QQQ',
+			option_type=OptionType.PUT,
+			strike='430',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='4.00',
+			exit_price='3.00',
+			entry_time=datetime.time(11, 0),
+			exit_time=datetime.time(11, 45),
+			trade_type=TradeType.LONG_PUT,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.BROKE,
+			rule_break_tags=['early entry'],
+		)
+
+		with patch('journal.views.timezone.localdate', return_value=trade_date):
+			response = self.client.get(reverse('dashboard'))
+
+		self.assertContains(response, 'Rule Follow Rate (7d)')
+		self.assertContains(response, '50.0%')
+		self.assertContains(response, 'Most Common Rule Break (30d)')
+		self.assertContains(response, 'early entry')
+
+	def test_dashboard_shows_all_top_rule_break_tags_when_tied(self):
+		trade_date = _market_day()
+		Trade.objects.create(
+			trade_date=trade_date,
+			symbol='SPX',
+			option_type=OptionType.CALL,
+			strike='5000',
+			expiry=trade_date,
+			quantity=1,
+			entry_price='5.00',
+			exit_price='4.00',
+			entry_time=datetime.time(9, 30),
+			exit_time=datetime.time(9, 50),
+			trade_type=TradeType.LONG_CALL,
+			status=TradeStatus.CLOSED,
+			rule_review=RuleReview.BROKE,
+			rule_break_tags=['oversized', 'early entry'],
+		)
+
+		with patch('journal.views.timezone.localdate', return_value=trade_date):
+			response = self.client.get(reverse('dashboard'))
+
+		self.assertContains(response, 'oversized')
+		self.assertContains(response, 'early entry')
+		self.assertContains(response, 'Logged 1 time across closed trades')
+		self.assertContains(response, 'each')

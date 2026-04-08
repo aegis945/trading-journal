@@ -66,6 +66,52 @@
       </p>
     </div>
   </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in" style="animation-delay:30ms;">
+    <div class="card p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-widest" style="color:var(--text-secondary);">Rule Follow Rate (7d)</span>
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--profit-glow);">
+          <i data-lucide="shield-check" style="width:15px;height:15px;color:var(--profit);"></i>
+        </span>
+      </div>
+      <p class="mono text-2xl font-semibold leading-none" style="color:var(--text-primary);">
+        {% if weekly_rule_follow_rate is not None %}{{ weekly_rule_follow_rate }}%{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+      </p>
+      <p class="text-xs" style="color:var(--text-secondary);">
+        {% if weekly_reviewed_count %}{{ weekly_reviewed_count }} reviewed trade{{ weekly_reviewed_count|pluralize }} this week{% else %}No reviewed closed trades yet this week{% endif %}
+      </p>
+    </div>
+
+    <div class="card p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-medium uppercase tracking-widest" style="color:var(--text-secondary);">Most Common Rule Break (30d)</span>
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--loss-glow);">
+          <i data-lucide="badge-alert" style="width:15px;height:15px;color:var(--loss);"></i>
+        </span>
+      </div>
+      {% if top_rule_break_tags %}
+      <div class="flex flex-wrap gap-2">
+        {% for tag in top_rule_break_tags %}
+        <span class="text-sm font-semibold px-2.5 py-1 rounded-full" style="background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border);">
+          {{ tag }}
+        </span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-lg font-semibold leading-tight" style="color:var(--text-primary);">
+        <span style="color:var(--text-muted);">No repeated breaks yet</span>
+      </p>
+      {% endif %}
+      <p class="text-xs" style="color:var(--text-secondary);">
+        {% if top_rule_break_tags %}
+          Logged {{ top_rule_break_count }} time{{ top_rule_break_count|pluralize }} across closed trades
+          {% if top_rule_break_tags|length > 1 %} each{% endif %}
+        {% else %}
+          Once you tag rule breaks, the top pattern shows up here
+        {% endif %}
+      </p>
+    </div>
+  </div>
 
   <!-- ══════════════════════════════════════════════
        ROW 2 — Session + Checklist

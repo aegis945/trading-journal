@@ -85,6 +85,11 @@ def pnl_conversion_rate():
     return Decimal('1')
 
 
+@register.simple_tag
+def rule_break_tag_options():
+    return get_app_preferences().normalized_rule_break_tag_templates
+
+
 @register.filter
 def startswith(value, arg):
     """Check if string starts with arg: {{ request.path|startswith:"/trades/" }}"""

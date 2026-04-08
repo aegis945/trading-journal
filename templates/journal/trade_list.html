@@ -66,6 +66,15 @@
       </select>
     </div>
     <div>
+      <label class="block text-xs mb-1.5" style="color:var(--text-secondary);">Rules</label>
+      <select name="rule_review" class="rounded-lg px-3 py-1.5 text-sm focus:outline-none" style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+        <option value="">All</option>
+        {% for val, label in rule_review_choices %}
+        <option value="{{ val }}" {% if filters.rule_review == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
       <label class="block text-xs mb-1.5" style="color:var(--text-secondary);">Tag</label>
       <input type="text" name="tag" value="{{ filters.tag }}" placeholder="momentum…"
              class="rounded-lg px-3 py-1.5 text-sm focus:outline-none"

@@ -4,6 +4,8 @@
 {% block page_title %}{{ title }}{% endblock %}
 {% block content %}
 
+{% rule_break_tag_options as rule_break_tag_options %}
+
 <div class="max-w-3xl" x-data="tradeForm()">
   <div class="card p-6 animate-in">
     <form method="POST" enctype="multipart/form-data">
@@ -183,6 +185,20 @@
               <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule-break tags</label>
               {{ form.rule_break_tags_text }}
               <p class="text-xs mt-1" style="color:var(--text-muted)">Only needed when the trade broke your rules.</p>
+              {% if rule_break_tag_options %}
+              <div class="flex flex-wrap gap-2 mt-2">
+                {% for tag in rule_break_tag_options %}
+                <button type="button"
+                        class="text-xs px-2.5 py-1 rounded-full transition-colors"
+                        style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+                        onmouseover="this.style.color='var(--text-primary)'"
+                        onmouseout="this.style.color='var(--text-secondary)'"
+                        onclick="appendRuleBreakTag('id_rule_break_tags_text', '{{ tag|escapejs }}')">
+                  {{ tag }}
+                </button>
+                {% endfor %}
+              </div>
+              {% endif %}
             </div>
           </div>
           <div>
@@ -304,6 +320,19 @@
       if (data.iv !== null && data.iv !== undefined)
         document.querySelector('[name=iv_entry]').value = data.iv.toFixed(4);
     } catch(e) {}
+  }
+
+  function appendRuleBreakTag(inputId, tag) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const existing = input.value
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean);
+    if (!existing.some(value => value.toLowerCase() === tag.toLowerCase())) {
+      existing.push(tag);
+    }
+    input.value = existing.join(', ');
   }
 </script>
 {% endblock %}

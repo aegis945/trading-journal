@@ -18,6 +18,7 @@
 
     <form method="POST" class="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-x-4 gap-y-1 items-start">
       {% csrf_token %}
+      <input type="hidden" name="save_currency" value="1">
       <div>
         <label class="block text-xs mb-1.5" style="color:var(--text-secondary)">{{ preferences_form.display_currency.label }}</label>
       </div>
@@ -64,6 +65,51 @@
     {% if rate_fetch_error %}
     <div class="mt-3 text-sm p-3 rounded-lg" style="background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.2)">
       <p>{{ rate_fetch_error }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card p-5 animate-in" style="animation-delay:20ms">
+    <div class="flex items-start gap-4 mb-4">
+      <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:var(--loss-glow)">
+        <i data-lucide="shield-alert" style="width:18px;height:18px;color:var(--loss)"></i>
+      </div>
+      <div>
+        <p class="text-sm font-medium" style="color:var(--text-primary)">Rule-break Presets</p>
+        <p class="text-xs mt-1" style="color:var(--text-secondary)">Save your recurring rule-break tags once, then tap them from the trade form instead of typing them every time.</p>
+      </div>
+    </div>
+
+    <form method="POST" class="space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="save_rule_break_tags" value="1">
+      <div>
+        <label class="block text-xs mb-1.5" style="color:var(--text-secondary)">{{ rule_break_form.rule_break_tag_templates_text.label }}</label>
+        {{ rule_break_form.rule_break_tag_templates_text }}
+        <p class="text-xs mt-1" style="color:var(--text-muted)">{{ rule_break_form.rule_break_tag_templates_text.help_text }}</p>
+      </div>
+      {% if preferences.normalized_rule_break_tag_templates %}
+      <div class="flex flex-wrap gap-2">
+        {% for tag in preferences.normalized_rule_break_tag_templates %}
+        <span class="text-xs px-2.5 py-1 rounded-full" style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)">
+          {{ tag }}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div>
+        <button type="submit"
+          class="px-4 h-[42px] min-h-[42px] inline-flex items-center justify-center text-sm font-medium rounded-lg transition-colors"
+          style="background:var(--accent);color:#fff"
+          onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Save Presets</button>
+      </div>
+    </form>
+
+    {% if rule_break_form.errors %}
+    <div class="mt-3 text-sm p-3 rounded-lg" style="background:var(--loss-glow);color:var(--loss);border:1px solid rgba(244,63,94,0.2)">
+      {% for field, errors in rule_break_form.errors.items %}{% for error in errors %}
+      <p>{{ field }}: {{ error }}</p>
+      {% endfor %}{% endfor %}
     </div>
     {% endif %}
   </div>

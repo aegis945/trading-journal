@@ -61,6 +61,16 @@ class DisplayCurrency(models.TextChoices):
     EUR = 'EUR', 'Euro (€)'
 
 
+def default_rule_break_tag_templates():
+    return [
+        'early entry',
+        'late entry',
+        'oversized',
+        'revenge trade',
+        'ignored stop',
+    ]
+
+
 class AppPreferences(models.Model):
     display_currency = models.CharField(
         max_length=3,
@@ -75,6 +85,11 @@ class AppPreferences(models.Model):
         validators=[MinValueValidator(Decimal('0.0001'))],
         help_text='Fetched automatically when P&L display currency is set to EUR.',
     )
+    rule_break_tag_templates = models.JSONField(
+        default=default_rule_break_tag_templates,
+        blank=True,
+        help_text='Reusable rule-break tags shown in trade entry forms.',
+    )
     exchange_rate_updated_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -84,6 +99,10 @@ class AppPreferences(models.Model):
     @property
     def pnl_currency_symbol(self):
         return '$' if self.display_currency == DisplayCurrency.USD else '€'
+
+    @property
+    def normalized_rule_break_tag_templates(self):
+        return [tag.strip() for tag in (self.rule_break_tag_templates or []) if str(tag).strip()]
 
     def convert_pnl_value(self, value):
         amount = Decimal(str(value))

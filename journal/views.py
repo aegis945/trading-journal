@@ -23,7 +23,7 @@ from django.views.decorators.http import require_POST, require_GET
 from .models import (
     TradingSession, Trade, PreTradeChecklist, DailyRoutine,
     JournalEntry, PerformanceGoal,
-    TradeStatus, TradeType, OptionType, MarketBias,
+    RuleReview, TradeStatus, TradeType, OptionType, MarketBias,
     is_market_closed_day, market_closed_label, market_holiday_name, previous_market_day,
 )
 from .forms import TradeForm, TradingSessionForm
@@ -79,6 +79,30 @@ def dashboard(request):
     ).aggregate(avg=Avg('risk_reward_ratio'))['avg']
     avg_rr = round(float(avg_rr), 2) if avg_rr else None
 
+    seven_days_ago = today - datetime.timedelta(days=6)
+    weekly_reviewed = Trade.objects.filter(
+        trade_date__gte=seven_days_ago,
+        status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
+        rule_review__in=[RuleReview.FOLLOWED, RuleReview.BROKE],
+    )
+    weekly_reviewed_count = weekly_reviewed.count()
+    weekly_followed_count = weekly_reviewed.filter(rule_review=RuleReview.FOLLOWED).count()
+    weekly_rule_follow_rate = round(weekly_followed_count / weekly_reviewed_count * 100, 1) if weekly_reviewed_count else None
+
+    rule_break_counter = {}
+    for trade in recent_closed.filter(rule_review=RuleReview.BROKE).values('rule_break_tags'):
+        tags = trade['rule_break_tags'] or ['Unspecified']
+        for tag in tags:
+            rule_break_counter[tag] = rule_break_counter.get(tag, 0) + 1
+    top_rule_break_tags = []
+    top_rule_break_count = 0
+    if rule_break_counter:
+        top_rule_break_count = max(rule_break_counter.values())
+        top_rule_break_tags = sorted([
+            tag for tag, count in rule_break_counter.items()
+            if count == top_rule_break_count
+        ])
+
     # Streak: query last 50 closed trades ordered by date desc
     streak_trades = list(
         Trade.objects.filter(
@@ -102,6 +126,10 @@ def dashboard(request):
         'today_pnl': today_pnl,
         'win_rate_30d': win_rate_30d,
         'avg_rr': avg_rr,
+        'weekly_rule_follow_rate': weekly_rule_follow_rate,
+        'weekly_reviewed_count': weekly_reviewed_count,
+        'top_rule_break_tags': top_rule_break_tags,
+        'top_rule_break_count': top_rule_break_count,
         'streak': streak,
         'streak_type': streak_type,
         'tag_stats': tag_stats,
@@ -165,6 +193,7 @@ def trade_list(request):
     ttype     = request.GET.get('trade_type')
     status    = request.GET.get('status')
     tag       = request.GET.get('tag')
+    rule_review = request.GET.get('rule_review')
 
     if date_from:
         qs = qs.filter(trade_date__gte=date_from)
@@ -176,6 +205,10 @@ def trade_list(request):
         qs = qs.filter(trade_type=ttype)
     if status:
         qs = qs.filter(status=status)
+    if rule_review == 'UNREVIEWED':
+        qs = qs.filter(Q(rule_review__isnull=True) | Q(rule_review=''))
+    elif rule_review:
+        qs = qs.filter(rule_review=rule_review)
     if tag:
         tag = tag.strip().lower()
         # SQLite JSONField doesn't support __contains for array membership;
@@ -190,6 +223,7 @@ def trade_list(request):
         'option_type_choices': OptionType.choices,
         'trade_type_choices': TradeType.choices,
         'status_choices': TradeStatus.choices,
+        'rule_review_choices': [('FOLLOWED', 'Followed rules'), ('BROKE', 'Rule break'), ('UNREVIEWED', 'Not reviewed')],
         'filters': request.GET,
     })
 
@@ -601,31 +635,38 @@ def goal_delete(request, pk):
 # ============================================================
 
 def settings_index(request):
-    from .forms import AppPreferencesForm
+    from .forms import AppPreferencesForm, RuleBreakSettingsForm
     from .models import get_app_preferences
     from urllib.error import URLError
 
     preferences = get_app_preferences()
     rate_fetch_error = None
+    currency_form = AppPreferencesForm(instance=preferences)
+    rule_break_form = RuleBreakSettingsForm(instance=preferences)
     if request.method == 'POST':
-        form = AppPreferencesForm(request.POST, instance=preferences)
-        if form.is_valid():
-            preferences = form.save()
-            if preferences.display_currency == 'EUR':
-                try:
-                    preferences.refresh_exchange_rate_if_needed(force=True)
-                except (URLError, ValueError):
-                    rate_fetch_error = (
-                        'Could not refresh the live USD to EUR rate. '
-                        'Using the last saved rate instead.'
-                    )
-            if rate_fetch_error:
-                messages.warning(request, rate_fetch_error)
-            else:
-                messages.success(request, 'Display preferences updated.')
-            return redirect('settings_index')
-    else:
-        form = AppPreferencesForm(instance=preferences)
+        if 'save_rule_break_tags' in request.POST:
+            rule_break_form = RuleBreakSettingsForm(request.POST, instance=preferences)
+            if rule_break_form.is_valid():
+                rule_break_form.save()
+                messages.success(request, 'Rule-break presets updated.')
+                return redirect('settings_index')
+        else:
+            currency_form = AppPreferencesForm(request.POST, instance=preferences)
+            if currency_form.is_valid():
+                preferences = currency_form.save()
+                if preferences.display_currency == 'EUR':
+                    try:
+                        preferences.refresh_exchange_rate_if_needed(force=True)
+                    except (URLError, ValueError):
+                        rate_fetch_error = (
+                            'Could not refresh the live USD to EUR rate. '
+                            'Using the last saved rate instead.'
+                        )
+                if rate_fetch_error:
+                    messages.warning(request, rate_fetch_error)
+                else:
+                    messages.success(request, 'Display preferences updated.')
+                return redirect('settings_index')
 
     if preferences.display_currency == 'EUR':
         try:
@@ -634,7 +675,8 @@ def settings_index(request):
             rate_fetch_error = 'Live USD to EUR rate is temporarily unavailable.'
 
     return render(request, 'settings/index.html', {
-        'preferences_form': form,
+        'preferences_form': currency_form,
+        'rule_break_form': rule_break_form,
         'preferences': preferences,
         'rate_fetch_error': rate_fetch_error,
     })
