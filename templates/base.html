@@ -470,13 +470,30 @@
           };
         }
 
+        function getTimeZoneLabel(timeZone) {
+          try {
+            var formatter = new Intl.DateTimeFormat('en-US', {
+              timeZone: timeZone,
+              timeZoneName: 'short',
+            });
+            var parts = formatter.formatToParts(new Date());
+            var zone = parts.find(function (part) { return part.type === 'timeZoneName'; });
+            return zone ? zone.value : 'Local';
+          } catch (_) {
+            var chunks = String(timeZone || 'Local').split('/');
+            return chunks[chunks.length - 1].replace(/_/g, ' ');
+          }
+        }
+
         function formatClock(parts, label) {
           var minute = String(parts.minute).padStart(2, '0');
           return parts.weekday + ' ' + parts.month + ' ' + parts.day + ' ' + parts.hour + ':' + minute + ' ' + label;
         }
 
         function update() {
-          var vilnius = getZonedParts('Europe/Vilnius');
+          var localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+          var localParts = getZonedParts(localTimeZone);
+          var localLabel = getTimeZoneLabel(localTimeZone);
           var ny = getZonedParts('America/New_York');
           var h = ny.hour, mn = ny.minute;
           var weekdayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
@@ -486,7 +503,7 @@
           var statusEl = document.getElementById('market-status');
           if (!statusEl) return;
           if (dateEl) {
-            dateEl.textContent = formatClock(vilnius, 'VLN');
+            dateEl.textContent = formatClock(localParts, localLabel);
           }
           var nyEl = document.getElementById('market-date-ny');
           if (nyEl) {
