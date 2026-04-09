@@ -95,7 +95,21 @@
           </div>
         </div>
 
-        <div class="flex justify-end mt-5">
+        <div class="flex items-center justify-between mt-5">
+          {% if session.pk %}
+          <form method="post" action="{% url 'session_delete' session.date|date:'Y-m-d' %}" onsubmit="return confirm('Delete this session and all its data? This cannot be undone.')">
+            {% csrf_token %}
+            <button type="submit"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md border transition-colors"
+                    style="border-color:rgba(244,63,94,0.25);color:var(--loss);"
+                    onmouseover="this.style.background='var(--loss-glow)'"
+                    onmouseout="this.style.background=''">
+              <i data-lucide="trash-2" style="width:11px;height:11px;"></i> Delete Session
+            </button>
+          </form>
+          {% else %}
+          <div></div>
+          {% endif %}
           <button type="submit"
             class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
             style="background:var(--accent);color:#fff"

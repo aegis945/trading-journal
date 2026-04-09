@@ -19,6 +19,7 @@ urlpatterns = [
     path('sessions/', views.session_list, name='session_list'),
     path('sessions/<str:date>/', views.session_detail, name='session_detail'),
     path('sessions/<str:date>/edit/', views.session_edit, name='session_edit'),
+    path('sessions/<str:date>/delete/', views.session_delete, name='session_delete'),
     path('sessions/<str:date>/checklist/<str:item_id>/toggle/', views.checklist_toggle, name='checklist_toggle'),
 
     # Calendar

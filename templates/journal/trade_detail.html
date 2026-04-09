@@ -12,25 +12,8 @@
   Trade Detail
 </span>{% endblock %}
 
-{% block header_actions %}
-<a href="{% url 'trade_edit' trade.pk %}"
-   class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
-   style="border-color:var(--border);color:var(--text-secondary);"
-   onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text-primary)'"
-   onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">
-  <i data-lucide="pencil" style="width:11px;height:11px;"></i> Edit
-</a>
-<form method="post" action="{% url 'trade_delete' trade.pk %}" onsubmit="return confirm('Delete this trade? This cannot be undone.')">
-  {% csrf_token %}
-  <button type="submit"
-          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors text-loss"
-          style="border-color:rgba(244,63,94,0.3);"
-          onmouseover="this.style.background='var(--loss-glow)'"
-          onmouseout="this.style.background=''">
-    <i data-lucide="trash-2" style="width:11px;height:11px;"></i> Delete
-  </button>
-</form>
-{% endblock %}
+{% block header_actions %}{% endblock %}
+
 
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 animate-in">
@@ -52,16 +35,18 @@
             {{ trade.quantity }} contract{{ trade.quantity|pluralize }}
           </p>
         </div>
-        <span class="text-xs px-3 py-1 rounded-full font-medium
-          {% if trade.status == 'OPEN' %}text-neutral{% elif trade.status == 'CLOSED' %}text-profit{% else %}text-slate-400{% endif %}"
-          style="background:{% if trade.status == 'OPEN' %}rgba(148,163,184,0.1){% elif trade.status == 'CLOSED' %}var(--profit-glow){% else %}rgba(100,116,139,0.1){% endif %};">
-          {{ trade.status }}
-        </span>
-        {% if trade.is_paper_trade %}
-        <span class="text-xs px-3 py-1 rounded-full font-medium" style="background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.25);">
-          PAPER TRADE
-        </span>
-        {% endif %}
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs px-3 py-1 rounded-full font-medium
+            {% if trade.status == 'OPEN' %}text-neutral{% elif trade.status == 'CLOSED' %}text-profit{% else %}text-slate-400{% endif %}"
+            style="background:{% if trade.status == 'OPEN' %}rgba(148,163,184,0.1){% elif trade.status == 'CLOSED' %}var(--profit-glow){% else %}rgba(100,116,139,0.1){% endif %};">
+            {{ trade.status }}
+          </span>
+          {% if trade.is_paper_trade %}
+          <span class="text-xs px-3 py-1 rounded-full font-medium" style="background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.25);">
+            PAPER TRADE
+          </span>
+          {% endif %}
+        </div>
       </div>
 
       <!-- P&L / Entry / Exit mini-cards -->
@@ -189,6 +174,27 @@
         </a>
       </div>
       {% endif %}
+
+      <!-- Edit / Delete footer -->
+      <div class="flex items-center gap-2 mt-6 pt-4" style="border-top:1px solid var(--border);">
+        <a href="{% url 'trade_edit' trade.pk %}"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-colors"
+           style="border-color:var(--border);color:var(--text-secondary);"
+           onmouseover="this.style.background='rgba(255,255,255,0.06)';this.style.color='var(--text-primary)'"
+           onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">
+          <i data-lucide="pencil" style="width:11px;height:11px;"></i> Edit Trade
+        </a>
+        <form method="post" action="{% url 'trade_delete' trade.pk %}" onsubmit="return confirm('Delete this trade? This cannot be undone.')">
+          {% csrf_token %}
+          <button type="submit"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-colors"
+                  style="border-color:rgba(244,63,94,0.25);color:var(--loss);"
+                  onmouseover="this.style.background='var(--loss-glow)'"
+                  onmouseout="this.style.background=''">
+            <i data-lucide="trash-2" style="width:11px;height:11px;"></i> Delete Trade
+          </button>
+        </form>
+      </div>
     </div>
 
     <!-- Greeks card -->

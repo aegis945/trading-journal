@@ -462,6 +462,19 @@ def session_edit(request, date):
     return redirect('session_detail', date=date)
 
 
+def session_delete(request, date):
+    try:
+        session_date = datetime.date.fromisoformat(date)
+    except ValueError:
+        return redirect('session_list')
+    session = get_object_or_404(TradingSession, date=session_date)
+    if request.method == 'POST':
+        session.delete()
+        messages.success(request, 'Session deleted.')
+        return redirect('session_list')
+    return redirect('session_detail', date=date)
+
+
 @require_POST
 def checklist_toggle(request, date, item_id):
     """HTMX: toggle a single checklist item and return updated partial."""
