@@ -609,6 +609,19 @@ def journal_list(request):
     })
 
 
+def _journal_trades_json():
+    """Return all trades as a JSON string for the journal entry form."""
+    rows = []
+    for t in Trade.objects.select_related('session').order_by('-trade_date', 'symbol'):
+        rows.append({
+            'id': t.pk,
+            'session_id': t.session_id,
+            'label': f"{t.trade_date.strftime('%b %d')} · {t.symbol} {t.get_trade_type_display()}",
+            'pnl': float(t.pnl) if t.pnl is not None else None,
+        })
+    return json.dumps(rows)
+
+
 def journal_new(request):
     from .forms import JournalEntryForm
     if request.method == 'POST':
@@ -618,7 +631,10 @@ def journal_new(request):
             return redirect('journal_list')
     else:
         form = JournalEntryForm()
-    return render(request, 'journal/journal_form.html', {'form': form, 'title': 'New Entry'})
+    return render(request, 'journal/journal_form.html', {
+        'form': form, 'title': 'New Entry',
+        'trades_json': _journal_trades_json(), 'linked_ids': [],
+    })
 
 
 def journal_edit(request, pk):
@@ -631,7 +647,11 @@ def journal_edit(request, pk):
             return redirect('journal_list')
     else:
         form = JournalEntryForm(instance=entry)
-    return render(request, 'journal/journal_form.html', {'form': form, 'entry': entry, 'title': 'Edit Entry'})
+    linked_ids = list(entry.trades.values_list('pk', flat=True))
+    return render(request, 'journal/journal_form.html', {
+        'form': form, 'entry': entry, 'title': 'Edit Entry',
+        'trades_json': _journal_trades_json(), 'linked_ids': linked_ids,
+    })
 
 
 def journal_delete(request, pk):
