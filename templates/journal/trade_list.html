@@ -118,7 +118,12 @@
           onclick="window.location='{% url 'trade_detail' trade.pk %}'"
         >
           <td class="px-4 py-3 mono text-xs" style="color:var(--text-secondary);">{{ trade.trade_date }}</td>
-          <td class="px-4 py-3 font-semibold text-sm" style="color:var(--text-primary);">{{ trade.symbol }}</td>
+          <td class="px-4 py-3 font-semibold text-sm" style="color:var(--text-primary);">
+            {{ trade.symbol }}
+            {% if trade.is_paper_trade %}
+            <span class="ml-1 text-xs px-1.5 py-0.5 rounded font-medium" style="background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.25);">PAPER</span>
+            {% endif %}
+          </td>
           <td class="px-4 py-3">
             <span class="text-xs font-medium" style="color:var(--text-primary);">{{ trade.option_type }}</span>
             <span class="text-xs ml-1" style="color:var(--text-secondary);">{{ trade.get_trade_type_display }}</span>
@@ -159,7 +164,11 @@
           </td>
           <td class="px-4 py-3 text-right mono font-semibold text-sm">
             {% if trade.pnl is not None %}
+            {% if trade.is_paper_trade %}
+            <span style="color:#fbbf24">{{ trade.pnl|pnl_str }}</span>
+            {% else %}
             <span class="{{ trade.pnl|pnl_color }}">{{ trade.pnl|pnl_str }}</span>
+            {% endif %}
             {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
           </td>
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-secondary);">

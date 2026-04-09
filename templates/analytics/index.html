@@ -488,10 +488,11 @@
         (r) => `
     <tr style="border-bottom:1px solid var(--border);">
       <td class="py-2 mono" style="color:var(--text-primary)">${r.month}</td>
-      <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.trades}</td>
+      <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.trades}${r.paper_trades ? `<span style="color:#fbbf24;font-size:10px;display:block">+${r.paper_trades}p</span>` : ''}</td>
       <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.win_rate}%</td>
       <td class="py-2 text-right mono font-semibold" style="color:${r.total_pnl >= 0 ? 'var(--profit)' : 'var(--loss)'}">
         ${formatPnlValue(r.total_pnl)}
+        ${r.paper_pnl !== 0 ? `<span style="color:#fbbf24;font-size:10px;display:block;font-weight:400">${formatPnlValue(r.paper_pnl)} paper</span>` : ''}
       </td>
       <td class="py-2 text-right mono" style="color:var(--text-secondary)">${r.avg_rr !== null ? r.avg_rr : "—"}</td>
     </tr>

@@ -38,9 +38,12 @@
         <td class="px-4 py-3 text-right mono" style="color:var(--text-secondary)">
           {{ session.trade_count }}
         </td>
-        <td class="px-4 py-3 text-right mono font-semibold"
-          style="color:{% if session.total_pnl > 0 %}var(--profit){% elif session.total_pnl < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
-          {% if session.total_pnl != 0 %}{{ session.total_pnl|pnl_str }}{% else %}—{% endif %}
+        <td class="px-4 py-3 text-right">
+          <span class="mono font-semibold block"
+            style="color:{% if session.real_pnl > 0 %}var(--profit){% elif session.real_pnl < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
+            {% if session.real_pnl != 0 %}{{ session.real_pnl|pnl_str }}{% else %}—{% endif %}
+          </span>
+          {% if session.paper_pnl %}<span class="mono text-xs block" style="color:#fbbf24">{{ session.paper_pnl|pnl_str }} paper</span>{% endif %}
         </td>
       </tr>
       {% empty %}

@@ -416,6 +416,17 @@ def session_detail(request, date):
         trades = session.trades.all()
         total_pnl = session.total_pnl
 
+    real_trades = trades.filter(is_paper_trade=False)
+    paper_trades = trades.filter(is_paper_trade=True)
+    real_pnl = real_trades.filter(
+        status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
+        pnl__isnull=False,
+    ).aggregate(total=Sum('pnl'))['total'] or Decimal('0')
+    paper_pnl = paper_trades.filter(
+        status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
+        pnl__isnull=False,
+    ).aggregate(total=Sum('pnl'))['total'] or Decimal('0')
+
     if request.method == 'POST':
         form = TradingSessionForm(request.POST, instance=session)
         if form.is_valid():
@@ -436,6 +447,10 @@ def session_detail(request, date):
         'daily_routine': daily_routine,
         'trades': trades,
         'total_pnl': total_pnl,
+        'real_trades': real_trades,
+        'paper_trades': paper_trades,
+        'real_pnl': real_pnl,
+        'paper_pnl': paper_pnl,
         'form': form,
         'market_closed': False,
         'market_closed_label': '',
@@ -520,9 +535,9 @@ def calendar_view(request):
 
     weeks = _build_calendar_grid(year, month, days_in_month, grid_days_before, sessions, today)
 
-    # Monthly totals
+    # Monthly totals (real trades only)
     month_pnl = sum(
-        s.total_pnl for s in sessions.values()
+        s.real_pnl for s in sessions.values()
     )
 
     return render(request, 'calendar/index.html', {
@@ -546,12 +561,14 @@ def _build_calendar_grid(year, month, days_in_month, pad_before, sessions, today
     for day_num in range(1, days_in_month + 1):
         d = datetime.date(year, month, day_num)
         session = sessions.get(d)
-        pnl = session.total_pnl if session else None
+        pnl = session.real_pnl if session else None
+        paper_pnl = session.paper_pnl if session else Decimal('0')
         is_closed = is_market_closed_day(d)
         days.append({
             'date': d,
             'session': session,
             'pnl': pnl,
+            'paper_pnl': paper_pnl,
             'trade_count': session.trade_count if session else 0,
             'psych_state': session.psychological_state if session else None,
             'is_today': d == today,

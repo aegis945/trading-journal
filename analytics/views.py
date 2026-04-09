@@ -40,22 +40,29 @@ def performance_review(request):
     sessions = TradingSession.objects.filter(date__range=(week_start, week_end)).prefetch_related('trades', 'journal_entries')
     journal_entries = JournalEntry.objects.filter(created_at__date__range=(week_start, week_end)).select_related('trade', 'session')
 
+    closed_real_trades = closed_week_trades.filter(is_paper_trade=False)
+    closed_paper_trades = closed_week_trades.filter(is_paper_trade=True)
+
     total_trades = all_week_trades.count()
-    closed_trade_count = closed_week_trades.count()
-    wins = closed_week_trades.filter(pnl__gt=0).count()
-    total_pnl = closed_week_trades.aggregate(total=Sum('pnl'))['total'] or Decimal('0')
-    avg_rr = closed_week_trades.filter(risk_reward_ratio__isnull=False).aggregate(avg=Avg('risk_reward_ratio'))['avg']
+    closed_trade_count = closed_real_trades.count()
+    wins = closed_real_trades.filter(pnl__gt=0).count()
+    total_pnl = closed_real_trades.aggregate(total=Sum('pnl'))['total'] or Decimal('0')
+    avg_rr = closed_real_trades.filter(risk_reward_ratio__isnull=False).aggregate(avg=Avg('risk_reward_ratio'))['avg']
     avg_rr = round(float(avg_rr), 2) if avg_rr is not None else None
+    paper_pnl = closed_paper_trades.aggregate(total=Sum('pnl'))['total'] or Decimal('0')
+    paper_trade_count = closed_paper_trades.count()
     process_metrics = calculate_process_metrics(week_start, week_end)
     reviewed_count = process_metrics['reviewed_trade_count']
     followed_rate = process_metrics[ProcessMetric.FOLLOW_RULES]
 
-    best_trades = list(
-        closed_week_trades.filter(pnl__gt=0).order_by('-pnl', '-trade_date', '-entry_time')[:3]
-    )
-    worst_trades = list(
-        closed_week_trades.filter(pnl__lt=0).order_by('pnl', '-trade_date', '-entry_time')[:3]
-    )
+    # Real trades are always shown first; paper fills remaining slots only if fewer than 3 real trades
+    real_best = list(closed_real_trades.filter(pnl__gt=0).order_by('-pnl', '-trade_date', '-entry_time')[:3])
+    paper_best = list(closed_paper_trades.filter(pnl__gt=0).order_by('-pnl', '-trade_date', '-entry_time')[:max(0, 3 - len(real_best))])
+    best_trades = real_best + paper_best
+
+    real_worst = list(closed_real_trades.filter(pnl__lt=0).order_by('pnl', '-trade_date', '-entry_time')[:3])
+    paper_worst = list(closed_paper_trades.filter(pnl__lt=0).order_by('pnl', '-trade_date', '-entry_time')[:max(0, 3 - len(real_worst))])
+    worst_trades = real_worst + paper_worst
 
     rule_break_counter = defaultdict(int)
     strategy_counter = defaultdict(int)
@@ -74,12 +81,17 @@ def performance_review(request):
         session = next((item for item in sessions if item.date == day), None)
         day_trades = [trade for trade in all_week_trades if trade.trade_date == day]
         closed_day_trades = [trade for trade in day_trades if trade.status in [TradeStatus.CLOSED, TradeStatus.EXPIRED] and trade.pnl is not None]
+        real_closed_day = [t for t in closed_day_trades if not t.is_paper_trade]
+        paper_day_count = sum(1 for t in day_trades if t.is_paper_trade)
+        paper_day_pnl = sum((t.pnl for t in closed_day_trades if t.is_paper_trade), Decimal('0'))
         session_rows.append({
             'date': day,
             'session': session,
             'trade_count': len(day_trades),
-            'closed_trade_count': len(closed_day_trades),
-            'pnl': sum((trade.pnl for trade in closed_day_trades), Decimal('0')),
+            'closed_trade_count': len(real_closed_day),
+            'pnl': sum((trade.pnl for trade in real_closed_day), Decimal('0')),
+            'paper_count': paper_day_count,
+            'paper_pnl': paper_day_pnl,
             'journal_count': journal_entries.filter(session=session).count() if session else 0,
         })
 
@@ -116,6 +128,8 @@ def performance_review(request):
             'total_trades': total_trades,
             'closed_trades': closed_trade_count,
             'avg_rr': avg_rr,
+            'paper_trade_count': paper_trade_count,
+            'paper_pnl': paper_pnl,
             'process_score': process_metrics[ProcessMetric.PROCESS_SCORE],
             'rule_follow_rate': followed_rate,
             'trading_day_count': process_metrics['trading_day_count'],
@@ -384,18 +398,22 @@ def data_duration_vs_pnl(request):
 
 def data_monthly_table(request):
     from itertools import groupby
-    rows = _closed_qs(request).order_by('trade_date').values('trade_date', 'pnl', 'risk_reward_ratio')
-    months: dict[str, dict] = defaultdict(lambda: {'trades': 0, 'wins': 0, 'pnl': Decimal('0'), 'rr_sum': Decimal('0'), 'rr_count': 0})
+    rows = _closed_qs(request).order_by('trade_date').values('trade_date', 'pnl', 'risk_reward_ratio', 'is_paper_trade')
+    months: dict[str, dict] = defaultdict(lambda: {'trades': 0, 'wins': 0, 'pnl': Decimal('0'), 'rr_sum': Decimal('0'), 'rr_count': 0, 'paper_pnl': Decimal('0'), 'paper_trades': 0})
     for r in rows:
         key = r['trade_date'].strftime('%Y-%m')
         m   = months[key]
-        m['trades'] += 1
-        m['pnl']    += r['pnl']
-        if r['pnl'] > 0:
-            m['wins'] += 1
-        if r['risk_reward_ratio']:
-            m['rr_sum']   += r['risk_reward_ratio']
-            m['rr_count'] += 1
+        if r['is_paper_trade']:
+            m['paper_pnl']    += r['pnl']
+            m['paper_trades'] += 1
+        else:
+            m['trades'] += 1
+            m['pnl']    += r['pnl']
+            if r['pnl'] > 0:
+                m['wins'] += 1
+            if r['risk_reward_ratio']:
+                m['rr_sum']   += r['risk_reward_ratio']
+                m['rr_count'] += 1
     table = []
     for month, m in sorted(months.items()):
         table.append({
@@ -403,6 +421,8 @@ def data_monthly_table(request):
             'trades': m['trades'],
             'win_rate': round(m['wins'] / m['trades'] * 100, 1) if m['trades'] else 0,
             'total_pnl': float(m['pnl']),
+            'paper_pnl': float(m['paper_pnl']),
+            'paper_trades': m['paper_trades'],
             'avg_rr': round(float(m['rr_sum'] / m['rr_count']), 2) if m['rr_count'] else None,
         })
     return JsonResponse({'table': table})

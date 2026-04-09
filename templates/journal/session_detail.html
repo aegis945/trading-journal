@@ -103,8 +103,8 @@
         <h2 class="text-sm font-semibold" style="color:var(--text-primary)">Trades</h2>
         <div class="flex items-center gap-3">
           <span class="mono text-sm font-semibold"
-            style="color:{% if total_pnl > 0 %}var(--profit){% elif total_pnl < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
-            Session P&L: {{ total_pnl|pnl_str }}
+            style="color:{% if real_pnl > 0 %}var(--profit){% elif real_pnl < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
+            {% if paper_trades %}Live{% else %}Session{% endif %} P&L: {{ real_pnl|pnl_str }}
           </span>
           <a href="{% url 'trade_add' %}"
             class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
@@ -115,7 +115,7 @@
         </div>
       </div>
       <div class="space-y-1">
-        {% for trade in trades %}
+        {% for trade in real_trades %}
         <a href="{% url 'trade_detail' trade.pk %}"
           class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors"
           style="background:{% if trade.pnl and trade.pnl > 0 %}var(--profit-glow){% elif trade.pnl and trade.pnl < 0 %}var(--loss-glow){% else %}var(--bg-elevated){% endif %}"
@@ -139,9 +139,47 @@
           </div>
         </a>
         {% empty %}
-        <p class="py-8 text-center text-sm" style="color:var(--text-muted)">No trades for this session.</p>
+        {% if not paper_trades %}<p class="py-8 text-center text-sm" style="color:var(--text-muted)">No trades for this session.</p>{% endif %}
         {% endfor %}
       </div>
+      {% if paper_trades %}
+      <div class="mt-4 pt-4" style="border-top:1px solid rgba(251,191,36,0.18)">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="flask-conical" style="width:12px;height:12px;color:#fbbf24"></i>
+            <span class="text-xs font-semibold uppercase tracking-wider" style="color:#fbbf24">Paper Trades</span>
+          </div>
+          {% if paper_pnl %}
+          <span class="mono text-sm font-semibold" style="color:#fbbf24">{{ paper_pnl|pnl_str }}</span>
+          {% endif %}
+        </div>
+        <div class="space-y-1">
+          {% for trade in paper_trades %}
+          <a href="{% url 'trade_detail' trade.pk %}"
+            class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors"
+            style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.14)"
+            onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+            <span class="font-medium" style="color:var(--text-primary)">
+              {{ trade.option_type }} {{ trade.strike }}
+              <span class="text-xs ml-1.5" style="color:var(--text-muted)">{{ trade.get_trade_type_display }}</span>
+            </span>
+            <div class="flex items-center gap-4">
+              <span class="mono text-xs" style="color:var(--text-muted)">
+                {{ trade.entry_time }}{% if trade.exit_time %} – {{ trade.exit_time }}{% endif %}
+              </span>
+              {% if trade.pnl is not None %}
+              <span class="mono text-xs font-semibold" style="color:#fbbf24">
+                {{ trade.pnl|pnl_str }}
+              </span>
+              {% else %}
+              <span class="text-xs px-1.5 py-0.5 rounded" style="background:var(--bg-base);color:var(--neutral)">OPEN</span>
+              {% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
 
   </div><!-- /col-span-2 -->

@@ -268,6 +268,24 @@ class TradingSession(models.Model):
         return result or Decimal('0')
 
     @property
+    def real_pnl(self):
+        """Sum of P&L for real (non-paper) closed/expired trades only."""
+        result = self.trades.filter(
+            status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
+            is_paper_trade=False,
+        ).aggregate(total=models.Sum('pnl'))['total']
+        return result or Decimal('0')
+
+    @property
+    def paper_pnl(self):
+        """Sum of P&L for paper closed/expired trades only."""
+        result = self.trades.filter(
+            status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
+            is_paper_trade=True,
+        ).aggregate(total=models.Sum('pnl'))['total']
+        return result or Decimal('0')
+
+    @property
     def trade_count(self):
         return self.trades.count()
 
@@ -396,6 +414,10 @@ class Trade(models.Model):
         help_text='IBKR TradeID for deduplication on CSV import',
     )
     imported      = models.BooleanField(default=False)
+    is_paper_trade = models.BooleanField(
+        default=False,
+        help_text='Mark as paper/simulated trade (not real money)',
+    )
 
     created_at    = models.DateTimeField(auto_now_add=True)
     updated_at    = models.DateTimeField(auto_now=True)

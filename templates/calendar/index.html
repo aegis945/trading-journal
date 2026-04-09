@@ -70,6 +70,9 @@
           {{ cell.pnl|pnl_str:0 }}
         </p>
         {% endif %}
+        {% if cell.paper_pnl %}
+        <p class="mono text-xs font-semibold truncate" style="color:#fbbf24">{{ cell.paper_pnl|pnl_str:0 }} <span class="font-normal" style="font-size:9px;opacity:0.75">paper</span></p>
+        {% endif %}
         <!-- Trade count -->
         {% if cell.trade_count %}
         <p class="text-xs mt-0.5" style="color:var(--text-muted);">
