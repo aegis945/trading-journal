@@ -158,12 +158,12 @@ class JournalEntryForm(forms.ModelForm):
 
     class Meta:
         model  = JournalEntry
-        fields = ['title', 'entry_type', 'content', 'trade', 'session']
+        fields = ['title', 'entry_type', 'content', 'trades', 'session']
         widgets = {
             'title':      forms.TextInput(attrs={'class': _INPUT_CLASSES, 'placeholder': 'Entry title'}),
             'entry_type': forms.Select(attrs={'class': _SELECT_CLASSES}),
             'content':    forms.Textarea(attrs={'id': 'journal-editor', 'class': _TEXTAREA_CLASSES, 'rows': '12'}),
-            'trade':      forms.Select(attrs={'class': _SELECT_CLASSES}),
+            'trades':     forms.SelectMultiple(attrs={'class': _SELECT_CLASSES, 'size': '4'}),
             'session':    forms.Select(attrs={'class': _SELECT_CLASSES}),
         }
 
@@ -181,6 +181,7 @@ class JournalEntryForm(forms.ModelForm):
         entry.tags = self.cleaned_data['tags_text']
         if commit:
             entry.save()
+            self.save_m2m()
         return entry
 
 

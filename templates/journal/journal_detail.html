@@ -25,14 +25,14 @@
     <div class="text-sm leading-relaxed" style="color:var(--text-secondary)">
       {{ entry.content|linebreaks }}
     </div>
-    {% if entry.trade or entry.session %}
+    {% if entry.trades.all or entry.session %}
     <div class="mt-5 pt-4 flex flex-wrap gap-4" style="border-top:1px solid var(--border)">
-      {% if entry.trade %}
+      {% for t in entry.trades.all %}
       <p class="text-xs" style="color:var(--text-muted)">
         Linked trade:
-        <a href="{% url 'trade_detail' entry.trade.pk %}" style="color:var(--accent)">{{ entry.trade }}</a>
+        <a href="{% url 'trade_detail' t.pk %}" style="color:var(--accent)">{{ t }}</a>
       </p>
-      {% endif %}
+      {% endfor %}
       {% if entry.session %}
       <p class="text-xs" style="color:var(--text-muted)">
         Session:

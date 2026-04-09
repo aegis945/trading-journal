@@ -553,9 +553,8 @@ class JournalEntry(models.Model):
         max_length=15, choices=EntryType.choices, default=EntryType.OBSERVATION,
     )
     tags       = models.JSONField(default=list)
-    trade      = models.ForeignKey(
-        Trade, on_delete=models.SET_NULL,
-        null=True, blank=True, related_name='journal_entries',
+    trades     = models.ManyToManyField(
+        Trade, blank=True, related_name='journal_entries',
     )
     session    = models.ForeignKey(
         TradingSession, on_delete=models.SET_NULL,

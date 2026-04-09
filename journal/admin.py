@@ -44,10 +44,11 @@ class DailyRoutineAdmin(admin.ModelAdmin):
 
 @admin.register(JournalEntry)
 class JournalEntryAdmin(admin.ModelAdmin):
-    list_display  = ('title', 'entry_type', 'trade', 'session', 'created_at')
+    list_display  = ('title', 'entry_type', 'session', 'created_at')
     list_filter   = ('entry_type',)
     search_fields = ('title', 'content')
-    raw_id_fields = ('trade', 'session')
+    raw_id_fields = ('session',)
+    filter_horizontal = ('trades',)
     date_hierarchy = 'created_at'
 
 

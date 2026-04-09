@@ -38,7 +38,7 @@ def performance_review(request):
         pnl__isnull=False,
     )
     sessions = TradingSession.objects.filter(date__range=(week_start, week_end)).prefetch_related('trades', 'journal_entries')
-    journal_entries = JournalEntry.objects.filter(created_at__date__range=(week_start, week_end)).select_related('trade', 'session')
+    journal_entries = JournalEntry.objects.filter(created_at__date__range=(week_start, week_end)).select_related('session').prefetch_related('trades')
 
     closed_real_trades = closed_week_trades.filter(is_paper_trade=False)
     closed_paper_trades = closed_week_trades.filter(is_paper_trade=True)
@@ -97,7 +97,7 @@ def performance_review(request):
 
     session_prep_completed = process_metrics['session_prep_completed']
     session_reflections_completed = process_metrics['session_review_completed']
-    linked_trade_journal_count = journal_entries.filter(trade__isnull=False).count()
+    linked_trade_journal_count = journal_entries.filter(trades__isnull=False).distinct().count()
 
     journal_type_counts = []
     for entry_type, label in EntryType.choices:
@@ -105,7 +105,7 @@ def performance_review(request):
         if count:
             journal_type_counts.append({'label': label, 'count': count})
 
-    standalone_weekly_notes_count = journal_entries.filter(trade__isnull=True, session__isnull=True).count()
+    standalone_weekly_notes_count = journal_entries.filter(session__isnull=True).exclude(trades__isnull=False).count()
     rule_break_trade_count = closed_week_trades.filter(rule_review=RuleReview.BROKE).count()
     app_prompts = []
     if rule_break_trade_count and not standalone_weekly_notes_count:

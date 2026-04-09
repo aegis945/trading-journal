@@ -117,7 +117,7 @@ def dashboard(request):
     tag_stats = _compute_tag_stats(recent_closed)
 
     # Recent journal entries
-    recent_journal = JournalEntry.objects.select_related('trade', 'session').order_by('-created_at')[:5]
+    recent_journal = JournalEntry.objects.select_related('session').order_by('-created_at')[:5]
 
     app_prompts = []
     if session and not session.is_pre_market_complete:
@@ -590,7 +590,7 @@ def _build_calendar_grid(year, month, days_in_month, pad_before, sessions, today
 # ============================================================
 
 def journal_list(request):
-    qs = JournalEntry.objects.select_related('trade', 'session').all()
+    qs = JournalEntry.objects.select_related('session').prefetch_related('trades').all()
     entry_type = request.GET.get('entry_type')
     tag        = request.GET.get('tag')
     q          = request.GET.get('q')
