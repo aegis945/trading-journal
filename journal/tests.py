@@ -1059,3 +1059,326 @@ class WeeklyReviewTests(TestCase):
 
 		self.assertContains(response, 'This week has 3 rule-break trades and no weekly note.')
 		self.assertContains(response, 'Write note')
+
+
+# ---------------------------------------------------------------------------
+# Paper trade regression tests
+# ---------------------------------------------------------------------------
+
+def _make_trade(trade_date, symbol='SPX', option_type=None, trade_type=None,
+				entry_price='5.00', exit_price='7.00', status=None,
+				entry_time=None, exit_time=None, is_paper_trade=False, **kwargs):
+	"""Helper that creates a minimal closed trade."""
+	option_type = option_type or OptionType.CALL
+	trade_type = trade_type or TradeType.LONG_CALL
+	status = status or TradeStatus.CLOSED
+	entry_time = entry_time or datetime.time(9, 30)
+	exit_time = exit_time or datetime.time(10, 0)
+	return Trade.objects.create(
+		trade_date=trade_date,
+		symbol=symbol,
+		option_type=option_type,
+		trade_type=trade_type,
+		strike='5000',
+		expiry=trade_date,
+		quantity=1,
+		entry_price=entry_price,
+		exit_price=exit_price,
+		entry_time=entry_time,
+		exit_time=exit_time,
+		status=status,
+		is_paper_trade=is_paper_trade,
+		**kwargs,
+	)
+
+
+class PaperTradeModelTests(TestCase):
+	"""TradingSession.real_pnl and .paper_pnl only count the right trades."""
+
+	def test_real_pnl_excludes_paper_trades(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='7.00')           # +$200 real
+		_make_trade(day, session=session, entry_price='5.00', exit_price='9.00',           # +$400 paper
+					is_paper_trade=True)
+
+		self.assertEqual(session.real_pnl, Decimal('200.00'))
+
+	def test_paper_pnl_excludes_real_trades(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='7.00')           # +$200 real
+		_make_trade(day, session=session, entry_price='5.00', exit_price='9.00',           # +$400 paper
+					is_paper_trade=True)
+
+		self.assertEqual(session.paper_pnl, Decimal('400.00'))
+
+	def test_real_pnl_is_zero_when_only_paper_trades_exist(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='9.00', is_paper_trade=True)
+
+		self.assertEqual(session.real_pnl, Decimal('0'))
+
+	def test_paper_pnl_is_zero_when_only_real_trades_exist(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='7.00')
+
+		self.assertEqual(session.paper_pnl, Decimal('0'))
+
+	def test_open_paper_trades_not_counted_in_paper_pnl(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		Trade.objects.create(
+			trade_date=day, session=session, symbol='SPX',
+			option_type=OptionType.CALL, trade_type=TradeType.LONG_CALL,
+			strike='5000', expiry=day, quantity=1, entry_price='5.00',
+			entry_time=datetime.time(9, 30), status=TradeStatus.OPEN,
+			is_paper_trade=True,
+		)
+
+		self.assertEqual(session.paper_pnl, Decimal('0'))
+
+
+class PaperTradeSessionDetailTests(TestCase):
+	"""Session detail page displays real and paper trades in separate sections."""
+
+	def test_session_detail_separates_real_and_paper_trades(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='7.00')
+		_make_trade(day, session=session, entry_price='5.00', exit_price='9.00', is_paper_trade=True)
+
+		response = self.client.get(reverse('session_detail', args=[day.isoformat()]))
+
+		self.assertContains(response, 'Paper Trades')
+		self.assertContains(response, 'Live P&L')
+
+	def test_session_detail_live_pnl_header_uses_real_only(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='7.00')          # +$200 real
+		_make_trade(day, session=session, entry_price='5.00', exit_price='15.00',          # +$1000 paper
+					is_paper_trade=True)
+
+		response = self.client.get(reverse('session_detail', args=[day.isoformat()]))
+
+		# Real P&L should appear, not the inflated total
+		self.assertContains(response, '+$200.00')
+		self.assertNotContains(response, '+$1,200.00')
+
+	def test_session_detail_no_paper_section_when_no_paper_trades(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session)
+
+		response = self.client.get(reverse('session_detail', args=[day.isoformat()]))
+
+		self.assertNotContains(response, 'Paper Trades')
+		self.assertContains(response, 'Session P&L')
+
+	def test_session_detail_context_contains_split_querysets(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		real = _make_trade(day, session=session)
+		paper = _make_trade(day, session=session, is_paper_trade=True)
+
+		response = self.client.get(reverse('session_detail', args=[day.isoformat()]))
+
+		real_ids = list(response.context['real_trades'].values_list('pk', flat=True))
+		paper_ids = list(response.context['paper_trades'].values_list('pk', flat=True))
+		self.assertIn(real.pk, real_ids)
+		self.assertNotIn(paper.pk, real_ids)
+		self.assertIn(paper.pk, paper_ids)
+		self.assertNotIn(real.pk, paper_ids)
+
+
+class PaperTradeSessionListTests(TestCase):
+	"""Sessions list page shows real P&L and paper P&L annotated separately."""
+
+	def test_session_list_shows_real_pnl_not_combined(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='7.00')           # +$200 real
+		_make_trade(day, session=session, entry_price='5.00', exit_price='25.00',           # +$2000 paper
+					is_paper_trade=True)
+
+		response = self.client.get(reverse('session_list'))
+
+		self.assertContains(response, '+$200.00')
+		self.assertNotContains(response, '+$2,200.00')
+
+	def test_session_list_shows_paper_pnl_annotation_in_yellow(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, is_paper_trade=True,
+					entry_price='5.00', exit_price='9.00')   # +$400 paper
+
+		response = self.client.get(reverse('session_list'))
+
+		# Template uses inline style with #fbbf24 on the paper annotation
+		self.assertContains(response, 'paper')
+		self.assertContains(response, '#fbbf24')
+
+	def test_session_list_no_paper_annotation_when_only_real_trades(self):
+		day = _market_day()
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session)
+
+		response = self.client.get(reverse('session_list'))
+
+		self.assertNotContains(response, 'paper')
+
+
+class PaperTradeCalendarTests(TestCase):
+	"""Calendar cells show real P&L in green/red and paper P&L in yellow."""
+
+	def test_calendar_cell_pnl_is_real_only(self):
+		day = datetime.date(2026, 4, 8)
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='7.00')           # +$200 real
+		_make_trade(day, session=session, entry_price='5.00', exit_price='25.00',           # +$2000 paper
+					is_paper_trade=True)
+
+		response = self.client.get(reverse('calendar'), {'year': 2026, 'month': 4})
+
+		self.assertContains(response, '+$200')
+		self.assertNotContains(response, '+$2,200')
+
+	def test_calendar_shows_paper_annotation(self):
+		day = datetime.date(2026, 4, 8)
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, is_paper_trade=True,
+					entry_price='5.00', exit_price='9.00')  # +$400 paper only
+
+		response = self.client.get(reverse('calendar'), {'year': 2026, 'month': 4})
+
+		self.assertContains(response, 'paper')
+		self.assertContains(response, '#fbbf24')
+
+	def test_calendar_no_paper_annotation_when_only_real_trades(self):
+		day = datetime.date(2026, 4, 8)
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session)
+
+		response = self.client.get(reverse('calendar'), {'year': 2026, 'month': 4})
+
+		self.assertNotContains(response, 'paper')
+
+	def test_calendar_cell_background_driven_by_real_pnl(self):
+		"""A day that is a real loss but a paper gain should show loss background."""
+		day = datetime.date(2026, 4, 8)
+		session = TradingSession.objects.create(date=day)
+		_make_trade(day, session=session, entry_price='5.00', exit_price='3.00')           # -$200 real loss
+		_make_trade(day, session=session, entry_price='5.00', exit_price='25.00',           # +$2000 paper gain
+					is_paper_trade=True)
+
+		response = self.client.get(reverse('calendar'), {'year': 2026, 'month': 4})
+
+		# Inline cell styles use no-space format; base CSS hover rules use 'background: var(--profit-glow)' with space
+		self.assertContains(response, 'background:var(--loss-glow)')
+		self.assertNotContains(response, 'background:var(--profit-glow)')
+
+
+class PaperTradeTradeListTests(TestCase):
+	"""Trade log shows PAPER badge and yellow P&L for paper trades."""
+
+	def test_trade_list_shows_paper_badge(self):
+		day = _market_day()
+		_make_trade(day, is_paper_trade=True)
+
+		response = self.client.get(reverse('trade_list'))
+
+		self.assertContains(response, 'PAPER')
+
+	def test_trade_list_real_trade_has_no_paper_badge(self):
+		day = _market_day()
+		_make_trade(day, is_paper_trade=False)
+
+		response = self.client.get(reverse('trade_list'))
+
+		self.assertNotContains(response, 'PAPER')
+
+	def test_trade_list_paper_pnl_rendered_in_yellow(self):
+		day = _market_day()
+		_make_trade(day, is_paper_trade=True, entry_price='5.00', exit_price='7.00')
+
+		response = self.client.get(reverse('trade_list'))
+
+		# Yellow colour applied to paper P&L, not the standard pnl_color class
+		self.assertContains(response, '#fbbf24')
+
+	def test_trade_list_real_pnl_not_rendered_in_yellow(self):
+		day = _market_day()
+		_make_trade(day, is_paper_trade=False, entry_price='5.00', exit_price='7.00')
+
+		response = self.client.get(reverse('trade_list'))
+
+		# Real profit P&L uses text-profit class, not inline yellow style
+		self.assertContains(response, 'text-profit')
+		self.assertNotContains(response, 'style="color:#fbbf24"')
+
+
+class PaperTradeDetailTests(TestCase):
+	"""Trade detail page shows PAPER TRADE badge for paper trades."""
+
+	def test_trade_detail_shows_paper_trade_badge(self):
+		day = _market_day()
+		trade = _make_trade(day, is_paper_trade=True)
+
+		response = self.client.get(reverse('trade_detail', args=[trade.pk]))
+
+		self.assertContains(response, 'PAPER TRADE')
+
+	def test_trade_detail_no_paper_badge_for_real_trade(self):
+		day = _market_day()
+		trade = _make_trade(day, is_paper_trade=False)
+
+		response = self.client.get(reverse('trade_detail', args=[trade.pk]))
+
+		self.assertNotContains(response, 'PAPER TRADE')
+
+	def test_trade_form_checkbox_present(self):
+		response = self.client.get(reverse('trade_add'))
+
+		self.assertContains(response, 'is_paper_trade')
+		self.assertContains(response, 'Paper trade')
+
+	def test_trade_form_saves_paper_trade_flag(self):
+		day = _market_day()
+		response = self.client.post(reverse('trade_add'), {
+			'trade_date': day.isoformat(),
+			'symbol': 'SPX',
+			'option_type': OptionType.CALL,
+			'trade_type': TradeType.LONG_CALL,
+			'strike': '5000',
+			'expiry': day.isoformat(),
+			'quantity': 1,
+			'entry_price': '5.00',
+			'entry_time': '09:30',
+			'status': TradeStatus.OPEN,
+			'is_paper_trade': 'on',
+		}, follow=True)
+
+		trade = Trade.objects.get()
+		self.assertTrue(trade.is_paper_trade)
+
+	def test_trade_form_defaults_to_real_trade(self):
+		day = _market_day()
+		self.client.post(reverse('trade_add'), {
+			'trade_date': day.isoformat(),
+			'symbol': 'SPX',
+			'option_type': OptionType.CALL,
+			'trade_type': TradeType.LONG_CALL,
+			'strike': '5000',
+			'expiry': day.isoformat(),
+			'quantity': 1,
+			'entry_price': '5.00',
+			'entry_time': '09:30',
+			'status': TradeStatus.OPEN,
+		}, follow=True)
+
+		trade = Trade.objects.get()
+		self.assertFalse(trade.is_paper_trade)
+
