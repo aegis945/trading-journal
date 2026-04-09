@@ -62,13 +62,7 @@ class DisplayCurrency(models.TextChoices):
 
 
 def default_rule_break_tag_templates():
-    return [
-        'early entry',
-        'late entry',
-        'oversized',
-        'revenge trade',
-        'ignored stop',
-    ]
+    return []
 
 
 class AppPreferences(models.Model):

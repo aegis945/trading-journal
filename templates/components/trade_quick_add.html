@@ -4,6 +4,7 @@ HTMX modal for quick trade entry from the topbar "+ Trade" button.
 {% endcomment %}
 {% load journal_extras %}
 {% rule_break_tag_options as rule_break_tag_options %}
+{% strategy_tag_options as strategy_tag_options %}
 <div
   class="fixed inset-0 z-50 flex items-center justify-center"
   style="background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)"
@@ -73,7 +74,24 @@ HTMX modal for quick trade entry from the topbar "+ Trade" button.
           </div>
         </div>
       </div>
-      <div>{{ form.strategy_tags_text.label_tag }}{{ form.strategy_tags_text }}</div>
+      <div>
+        {{ form.strategy_tags_text.label_tag }}
+        {{ form.strategy_tags_text }}
+        {% if strategy_tag_options %}
+        <div class="flex flex-wrap gap-2 mt-2">
+          {% for tag in strategy_tag_options %}
+          <button type="button"
+                  class="text-xs px-2.5 py-1 rounded-full transition-colors"
+                  style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+                  onmouseover="this.style.color='var(--text-primary)'"
+                  onmouseout="this.style.color='var(--text-secondary)'"
+                  onclick="appendRuleBreakTag('id_strategy_tags_text', '{{ tag|escapejs }}')">
+            {{ tag }}
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
       <div x-data="{ ruleReview: '{{ form.rule_review.value|default:"" }}' }">
         <div class="mb-3">
           <label class="block text-xs mb-1" style="color:var(--text-secondary)">Rule Review</label>

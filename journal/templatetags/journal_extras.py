@@ -4,7 +4,7 @@ journal/templatetags/journal_extras.py
 from decimal import Decimal, InvalidOperation
 
 from django import template
-from journal.models import get_app_preferences
+from journal.models import get_app_preferences, Trade
 
 register = template.Library()
 
@@ -87,7 +87,29 @@ def pnl_conversion_rate():
 
 @register.simple_tag
 def rule_break_tag_options():
-    return get_app_preferences().normalized_rule_break_tag_templates
+    # Collect every tag ever used across all trades, then merge with any
+    # manually-configured templates in preferences, deduplicated and sorted.
+    used = set()
+    for row in Trade.objects.exclude(rule_break_tags=[]).values_list('rule_break_tags', flat=True):
+        if isinstance(row, list):
+            for tag in row:
+                t = str(tag).strip()
+                if t:
+                    used.add(t)
+    configured = set(get_app_preferences().normalized_rule_break_tag_templates)
+    return sorted(used | configured, key=str.lower)
+
+
+@register.simple_tag
+def strategy_tag_options():
+    used = set()
+    for row in Trade.objects.exclude(strategy_tags=[]).values_list('strategy_tags', flat=True):
+        if isinstance(row, list):
+            for tag in row:
+                t = str(tag).strip()
+                if t:
+                    used.add(t)
+    return sorted(used, key=str.lower)
 
 
 @register.filter

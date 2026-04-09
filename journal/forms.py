@@ -86,11 +86,11 @@ class TradeForm(forms.ModelForm):
 
     def clean_strategy_tags_text(self):
         raw = self.cleaned_data.get('strategy_tags_text', '')
-        return [t.strip() for t in raw.split(',') if t.strip()]
+        return [t.strip()[:1].upper() + t.strip()[1:] for t in raw.split(',') if t.strip()]
 
     def clean_rule_break_tags_text(self):
         raw = self.cleaned_data.get('rule_break_tags_text', '')
-        return [tag.strip() for tag in raw.split(',') if tag.strip()]
+        return [tag.strip()[:1].upper() + tag.strip()[1:] for tag in raw.split(',') if tag.strip()]
 
     def clean_trade_date(self):
         trade_date = self.cleaned_data['trade_date']

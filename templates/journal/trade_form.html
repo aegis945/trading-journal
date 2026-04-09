@@ -5,6 +5,7 @@
 {% block content %}
 
 {% rule_break_tag_options as rule_break_tag_options %}
+{% strategy_tag_options as strategy_tag_options %}
 
 <div class="max-w-3xl" x-data="tradeForm()">
   <div class="card p-6 animate-in">
@@ -171,6 +172,20 @@
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">Strategy Tags</label>
             {{ form.strategy_tags_text }}
+            {% if strategy_tag_options %}
+            <div class="flex flex-wrap gap-2 mt-2">
+              {% for tag in strategy_tag_options %}
+              <button type="button"
+                      class="text-xs px-2.5 py-1 rounded-full transition-colors"
+                      style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
+                      onmouseover="this.style.color='var(--text-primary)'"
+                      onmouseout="this.style.color='var(--text-secondary)'"
+                      onclick="appendRuleBreakTag('id_strategy_tags_text', '{{ tag|escapejs }}')">
+                {{ tag }}
+              </button>
+              {% endfor %}
+            </div>
+            {% endif %}
           </div>
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">Setup Quality (1–5)</label>
