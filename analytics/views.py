@@ -16,7 +16,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 
-from journal.models import EntryType, ProcessMetric, RuleReview, Trade, TradingSession, TradeStatus, JournalEntry, calculate_process_metrics
+from journal.models import EntryType, ProcessMetric, RuleReview, Trade, TradingSession, TradeStatus, JournalEntry, calculate_process_metrics, is_market_closed_day
 
 
 def analytics_index(request):
@@ -121,7 +121,10 @@ def performance_review(request):
     standalone_weekly_notes_count = journal_entries.filter(session__isnull=True).exclude(trades__isnull=False).count()
     rule_break_trade_count = closed_week_trades.filter(rule_review=RuleReview.BROKE).count()
     app_prompts = []
-    if rule_break_trade_count and not standalone_weekly_notes_count:
+    today = timezone.localdate()
+    is_current_week = (week_start <= today <= week_end)
+    is_last_trading_day_of_week = is_current_week and _is_last_trading_day_of_week(today, week_end)
+    if rule_break_trade_count and not standalone_weekly_notes_count and is_last_trading_day_of_week:
         app_prompts.append({
             'level': 'warning',
             'text': f'This week has {rule_break_trade_count} rule-break trade{pluralize_count(rule_break_trade_count)} and no weekly note.',
@@ -165,6 +168,16 @@ def performance_review(request):
         'app_prompts': app_prompts,
     }
     return render(request, 'analytics/review.html', context)
+
+
+def _is_last_trading_day_of_week(today, week_end):
+    """Return True if today is Friday (week_end) or, if Friday is a market holiday,
+    the last non-holiday weekday at or before Friday."""
+    # Walk back from Friday until we find a market-open day
+    last_trading_day = week_end  # week_end is always Friday
+    while last_trading_day >= (week_end - datetime.timedelta(days=4)) and is_market_closed_day(last_trading_day):
+        last_trading_day -= datetime.timedelta(days=1)
+    return today >= last_trading_day
 
 
 def pluralize_count(value):

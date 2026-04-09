@@ -2,6 +2,7 @@ import datetime
 import os
 import shutil
 import tempfile
+import unittest.mock
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -1055,7 +1056,11 @@ class WeeklyReviewTests(TestCase):
 				rule_break_tags=['early entry'],
 			)
 
-		response = self.client.get(reverse('performance_review'), {'week': '2026-04-08'})
+		# Prompt only shows on the last trading day of the week — mock to Friday Apr 10
+		with unittest.mock.patch('analytics.views.timezone') as mock_tz:
+			mock_tz.localdate.return_value = datetime.date(2026, 4, 10)
+			mock_tz.localtime = timezone.localtime
+			response = self.client.get(reverse('performance_review'), {'week': '2026-04-06'})
 
 		self.assertContains(response, 'This week has 3 rule-break trades and no weekly note.')
 		self.assertContains(response, 'Write note')
