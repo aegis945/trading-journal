@@ -87,22 +87,22 @@
       <div class="text-sm leading-relaxed" style="color:var(--text-secondary)">
         {{ entry.content|linebreaks }}
       </div>
-      {% if entry.trade or entry.session %}
+      {% with trade_count=entry.trades.count %}
+      {% if trade_count or entry.session %}
       <div class="mt-4 pt-4 flex flex-wrap gap-4" style="border-top:1px solid var(--border)">
-        {% if entry.trade %}
+        {% if trade_count %}
         <p class="text-xs" style="color:var(--text-muted)">
-          Linked trade:
-          <a href="{% url 'trade_detail' entry.trade.pk %}" style="color:var(--accent)">{{ entry.trade }}</a>
+          {{ trade_count }} linked trade{{ trade_count|pluralize }}
         </p>
         {% endif %}
         {% if entry.session %}
-        <p class="text-xs" style="color:var(--text-muted)">
-          Session:
-          <a href="{% url 'session_detail' entry.session.date|date:'Y-m-d' %}" style="color:var(--accent)">{{ entry.session.date }}</a>
+        <p class="text-xs">
+          <a href="{% url 'session_detail' entry.session.date|date:'Y-m-d' %}" style="color:var(--accent)">{{ entry.session.date|date:"N j, Y" }}</a>
         </p>
         {% endif %}
       </div>
       {% endif %}
+      {% endwith %}
     </div>
     {% empty %}
     <div class="py-16 text-center card">

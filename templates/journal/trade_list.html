@@ -125,14 +125,16 @@
             {% endif %}
           </td>
           <td class="px-4 py-3">
-            <span class="text-xs font-medium" style="color:var(--text-primary);">{{ trade.option_type }}</span>
-            <span class="text-xs ml-1" style="color:var(--text-secondary);">{{ trade.get_trade_type_display }}</span>
+            <div class="leading-tight">
+              <span class="text-xs font-medium block" style="color:var(--text-primary);">{{ trade.option_type }}</span>
+              <span class="text-xs block" style="color:var(--text-secondary);">{{ trade.get_trade_type_display }}</span>
+            </div>
           </td>
           <td class="px-4 py-3">
             {% if trade.strategy_tags %}
-            <div class="flex flex-wrap gap-1.5">
+            <div class="flex flex-nowrap gap-1.5 overflow-hidden">
               {% for tag in trade.strategy_tags %}
-              <span class="text-xs px-2 py-0.5 rounded-full"
+              <span class="text-xs px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0"
                     style="background:var(--accent-glow);color:var(--accent);border:1px solid rgba(59,130,246,0.18);">
                 {{ tag }}
               </span>
@@ -146,12 +148,7 @@
             {% if trade.rule_review == 'FOLLOWED' %}
             <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--profit-glow);color:var(--profit);border:1px solid rgba(16,185,129,0.18);">Followed</span>
             {% elif trade.rule_review == 'BROKE' %}
-            <div class="flex flex-wrap gap-1.5 items-center">
-              <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--loss-glow);color:var(--loss);border:1px solid rgba(244,63,94,0.18);">Rule break</span>
-              {% for tag in trade.rule_break_tags|slice:":2" %}
-              <span class="text-xs px-2 py-0.5 rounded-full" style="background:var(--bg-elevated);color:var(--text-secondary);">{{ tag }}</span>
-              {% endfor %}
-            </div>
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:var(--loss-glow);color:var(--loss);border:1px solid rgba(244,63,94,0.18);">Rule break</span>
             {% else %}
             <span class="text-xs" style="color:var(--text-muted);">—</span>
             {% endif %}
@@ -162,7 +159,7 @@
           <td class="px-4 py-3 text-right mono text-sm" style="color:var(--text-secondary);">
             {% if trade.exit_price %}${{ trade.exit_price|floatformat:2 }}{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
           </td>
-          <td class="px-4 py-3 text-right mono font-semibold text-sm">
+          <td class="px-4 py-3 text-right mono font-semibold text-sm whitespace-nowrap">
             {% if trade.pnl is not None %}
             {% if trade.is_paper_trade %}
             <span style="color:#fbbf24">{{ trade.pnl|pnl_str }}</span>
