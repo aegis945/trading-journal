@@ -285,7 +285,7 @@
     {% block extra_head %}{% endblock %}
   </head>
 
-  <body x-data="{ sidebarOpen: true }">
+  <body x-data="{ sidebarOpen: true }" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <div class="flex h-screen overflow-hidden">
 
       <!-- ================================================================
@@ -324,6 +324,7 @@
           {% url 'calendar'         as url_calendar %}
           {% url 'analytics'        as url_analytics %}
           {% url 'performance_review' as url_weekly_review %}
+          {% url 'option_calculator' as url_option_calc %}
           {% url 'journal_list'     as url_journal %}
           {% url 'goals'            as url_goals %}
           {% url 'ibkr_status_page' as url_ibkr %}
@@ -336,6 +337,7 @@
             {% include "components/nav_item.html" with href=url_calendar   icon="calendar"         label="Calendar" %}
             {% include "components/nav_item.html" with href=url_analytics  icon="bar-chart-2"      label="Analytics" %}
             {% include "components/nav_item.html" with href=url_weekly_review icon="notebook-pen" label="Weekly Review" exact=True child=True %}
+            {% include "components/nav_item.html" with href=url_option_calc icon="function-square" label="Option Calc" exact=True child=True %}
             {% include "components/nav_item.html" with href=url_journal    icon="book-open"        label="Journal" %}
             {% include "components/nav_item.html" with href=url_goals      icon="target"           label="Goals" %}
             <div class="my-2 mx-1" style="border-top: 1px solid var(--border);"></div>

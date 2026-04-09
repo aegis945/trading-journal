@@ -79,15 +79,15 @@ class IBKRClient:
 
         async def _connect():
             if not self._ib.isConnected():
-                await self._ib.connectAsync(host, port, clientId=client_id)
+                await self._ib.connectAsync(host, port, clientId=client_id, readonly=True)
 
-        self._run(_connect, timeout=15)
+        self._run(_connect(), timeout=15)
 
     def disconnect(self):
         if self._ib and self._ib.isConnected():
             async def _disconnect():
                 self._ib.disconnect()
-            self._run(_disconnect, timeout=5)
+            self._run(_disconnect(), timeout=5)
 
     def fetch_greeks(self, symbol: str, expiry: str, strike: float, right: str) -> dict:
         """
@@ -96,26 +96,46 @@ class IBKRClient:
         expiry format: 'YYYYMMDD'
         right: 'C' or 'P'
         """
-        from ib_insync import Option, util
+        from ib_insync import Option
 
         async def _fetch():
-            contract = Option(symbol, expiry, strike, right, 'CBOE')
-            await self._ib.qualifyContractsAsync(contract)
-            tickers  = await self._ib.reqTickersAsync(contract)
-            if not tickers:
-                raise RuntimeError('No ticker data returned from TWS.')
-            ticker   = tickers[0]
-            greeks   = ticker.modelGreeks or ticker.lastGreeks
+            contract = Option(symbol, expiry, strike, right, 'SMART')
+            qualified = await self._ib.qualifyContractsAsync(contract)
+            if not qualified:
+                raise RuntimeError(f'Contract not found: {symbol} {expiry} {strike} {right}')
+
+            # Request market data — model greeks populate automatically for options
+            ticker = self._ib.reqMktData(contract, genericTickList='', snapshot=False)
+            # Wait up to 6 seconds for model greeks to populate
+            for _ in range(60):
+                await asyncio.sleep(0.1)
+                greeks = ticker.modelGreeks
+                if greeks and greeks.delta is not None:
+                    break
+
+            self._ib.cancelMktData(contract)
+
+            greeks = ticker.modelGreeks or ticker.lastGreeks
+
+            def _val(v):
+                """Return None for IBKR sentinel values (-1, 2147483647)."""
+                if v is None:
+                    return None
+                f = float(v)
+                if f in (-1.0, 2147483647.0):
+                    return None
+                return f
+
             return {
-                'delta': float(greeks.delta)  if greeks and greeks.delta  is not None else None,
-                'theta': float(greeks.theta)  if greeks and greeks.theta  is not None else None,
-                'vega':  float(greeks.vega)   if greeks and greeks.vega   is not None else None,
-                'iv':    float(greeks.impliedVol) if greeks and greeks.impliedVol is not None else None,
-                'bid':   float(ticker.bid)    if ticker.bid  is not None else None,
-                'ask':   float(ticker.ask)    if ticker.ask  is not None else None,
+                'delta': _val(greeks.delta)      if greeks else None,
+                'theta': _val(greeks.theta)      if greeks else None,
+                'vega':  _val(greeks.vega)       if greeks else None,
+                'iv':    _val(greeks.impliedVol) if greeks else None,
+                'bid':   _val(ticker.bid),
+                'ask':   _val(ticker.ask),
             }
 
-        return self._run(_fetch, timeout=15)
+        return self._run(_fetch(), timeout=15)
 
     def fetch_chain(self, expiry: str) -> list[dict]:
         """
@@ -170,7 +190,7 @@ class IBKRClient:
                 })
             return result
 
-        return self._run(_fetch, timeout=30)
+        return self._run(_fetch(), timeout=30)
 
 
 # Module-level singleton — imported by views

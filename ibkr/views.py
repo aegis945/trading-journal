@@ -79,6 +79,40 @@ def ibkr_settings(request):
     })
 
 
+def ibkr_connect(request):
+    """HTMX endpoint — attempts to connect to TWS, returns updated status pill."""
+    from .client import ib_client
+
+    error = None
+    try:
+        ib_client.connect()
+    except Exception as exc:
+        error = str(exc)
+
+    connected = ib_client.is_connected()
+
+    if connected:
+        html = (
+            '<span class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full"'
+            ' style="background:var(--profit-glow);color:var(--profit);border:1px solid rgba(16,185,129,0.2)">'
+            '<span class="w-1.5 h-1.5 rounded-full bg-profit"></span>TWS Connected</span>'
+        )
+    elif error:
+        html = (
+            '<span class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full"'
+            ' style="background:rgba(244,63,94,0.1);color:#f43f5e;border:1px solid rgba(244,63,94,0.2)">'
+            f'<span class="w-1.5 h-1.5 rounded-full" style="background:#f43f5e"></span>'
+            f'Connection failed: {error}</span>'
+        )
+    else:
+        html = (
+            '<span class="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full"'
+            ' style="background:rgba(100,116,139,0.1);color:var(--text-secondary);border:1px solid var(--border)">'
+            '<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>Not connected</span>'
+        )
+    return HttpResponse(html)
+
+
 @require_GET
 def ibkr_chain(request):
     from .client import ib_client
@@ -105,13 +139,18 @@ def ibkr_greeks(request):
     if not ib_client.is_connected():
         return JsonResponse({'error': 'TWS not connected'}, status=503)
 
-    symbol = request.GET.get('symbol', 'SPX')
-    expiry = request.GET.get('expiry', '')
-    strike = request.GET.get('strike', '')
-    right  = request.GET.get('right', 'C')  # C or P
+    symbol      = request.GET.get('symbol', 'SPX')
+    expiry_raw  = request.GET.get('expiry', '')
+    strike      = request.GET.get('strike', '')
+    # Accept both 'right=P' and 'option_type=PUT/CALL'
+    right_raw   = request.GET.get('right') or request.GET.get('option_type', 'C')
+    right       = 'P' if right_raw.upper() in ('P', 'PUT') else 'C'
 
-    if not (expiry and strike):
+    if not (expiry_raw and strike):
         return JsonResponse({'error': 'expiry and strike are required'}, status=400)
+
+    # Normalise expiry: accept YYYY-MM-DD or YYYYMMDD
+    expiry = expiry_raw.replace('-', '')
 
     try:
         greek_data = ib_client.fetch_greeks(symbol, expiry, float(strike), right)
