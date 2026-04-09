@@ -7,9 +7,11 @@
 
   <!-- Input panel -->
   <div class="card p-5">
-    <div class="flex items-center gap-2 mb-4">
-      <i data-lucide="function-square" style="width:14px;height:14px;color:var(--text-secondary)"></i>
-      <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Contract Parameters</h3>
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <i data-lucide="function-square" style="width:14px;height:14px;color:var(--text-secondary)"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Contract Parameters</h3>
+      </div>
     </div>
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       <div class="lg:col-span-2">
@@ -34,10 +36,17 @@
         </select>
       </div>
       <div>
-        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Days to Expiry</label>
-        <input type="number" x-model.number="dte" @input="compute()" min="0" step="1"
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Expiry Date</label>
+        <input type="date" x-model="expiryDate" @change="onExpiryChange()" 
           class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
           style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div x-show="_is0dte">
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">DTE <span style="color:var(--text-muted);font-weight:400">(0.25 = 6h)</span></label>
+        <input type="number" x-model.number="dte" @input="compute()" step="0.25" min="0"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)"
+          placeholder="0">
       </div>
       <div>
         <label class="block text-xs mb-1" style="color:var(--text-secondary)">IV (%)</label>
@@ -48,6 +57,26 @@
       <div>
         <label class="block text-xs mb-1" style="color:var(--text-secondary)">Entry Price ($)</label>
         <input type="number" x-model.number="entryPrice" @input="compute()" step="0.01" min="0"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+    </div>
+
+    <!-- Optional greeks from broker -->
+    <div x-show="spx && strike && iv != null && dte != null && entryPrice != null"
+         class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4" style="border-top:1px solid var(--border)">
+      <div class="col-span-2 md:col-span-4">
+        <p class="text-xs" style="color:var(--text-muted)">Optional — paste greeks from broker to override Black-Scholes</p>
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Delta <span style="color:var(--text-muted);font-weight:400">(override)</span></label>
+        <input type="number" x-model.number="manualDelta" @input="compute()" step="0.001" placeholder="e.g. 0.473"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Theta <span style="color:var(--text-muted);font-weight:400">(override)</span></label>
+        <input type="number" x-model.number="manualTheta" @input="compute()" step="0.001" placeholder="e.g. -11.687"
           class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
           style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
       </div>
@@ -136,7 +165,7 @@
       <table class="w-full text-xs">
         <thead>
           <tr style="border-bottom:1px solid var(--border)">
-            <th class="pb-2 text-left font-medium uppercase tracking-wider" style="color:var(--text-muted)">SPX Δ</th>
+            <th class="pb-2 text-left font-medium uppercase tracking-wider" style="color:var(--text-muted)">SPX</th>
             <th class="pb-2 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Opt $</th>
             <th class="pb-2 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">P&amp;L</th>
             <th class="pb-2 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">R:R</th>
@@ -146,8 +175,8 @@
           <template x-for="row in scenarioRows" :key="row.delta">
             <tr :style="row.highlight ? 'background:rgba(59,130,246,0.06);border-radius:6px' : ''"
                 style="border-bottom:1px solid rgba(255,255,255,0.04)">
-              <td class="py-1.5 mono" :style="row.delta > 0 ? 'color:var(--profit)' : row.delta < 0 ? 'color:var(--loss)' : 'color:var(--text-primary)'"
-                  x-text="(row.delta > 0 ? '+' : '') + row.delta"></td>
+              <td class="py-1.5 mono" :style="row.spxLevel > spx ? 'color:var(--profit)' : row.spxLevel < spx ? 'color:var(--loss)' : 'color:var(--text-primary)'"
+                  x-text="row.spxLevel"></td>
               <td class="py-1.5 mono text-right" style="color:var(--text-primary)" x-text="'$' + row.price.toFixed(2)"></td>
               <td class="py-1.5 mono text-right font-semibold"
                   :style="row.pnl > 0 ? 'color:var(--profit)' : row.pnl < 0 ? 'color:var(--loss)' : 'color:var(--text-secondary)'"
@@ -196,9 +225,11 @@
 function optionCalc() {
   return {
     // Inputs
-    spx: 5500, strike: 5500, optType: 'call', dte: 1, iv: 18, rfr: 4.3,
-    entryPrice: 5.0, tp1Spx: null, tp2Spx: null, slSpx: null, qty: 1,
+    spx: null, strike: null, optType: 'call', expiryDate: '', dte: null, iv: null, rfr: 4.3,
+    entryPrice: null, manualDelta: null, manualTheta: null,
+    tp1Spx: null, tp2Spx: null, slSpx: null, qty: 1,
     range: 200, showPnl: true, showDelta: false,
+    _is0dte: false,
 
     // Derived
     greeks: [],
@@ -206,7 +237,21 @@ function optionCalc() {
     tp1Price: 0, tp2Price: 0, slPrice: 0, rr1: 0,
     _chart: null,
 
-    init() { this.compute(); },
+    init() {
+      this.compute();
+    },
+
+    onExpiryChange() {
+      if (this.expiryDate) {
+        const diff = Math.round((new Date(this.expiryDate) - new Date(new Date().toDateString())) / 86400000);
+        this.dte = Math.max(0, diff);
+        this._is0dte = (diff === 0);
+      } else {
+        this.dte = null;
+        this._is0dte = false;
+      }
+      this.compute();
+    },
 
     // ---------------------------------------------------------------
     // Black-Scholes
@@ -223,10 +268,7 @@ function optionCalc() {
     normPdf(x) { return Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI); },
 
     bs(S, K, T, r, sigma, type) {
-      if (T <= 0) {
-        const intrinsic = type === 'call' ? Math.max(S-K,0) : Math.max(K-S,0);
-        return { price: intrinsic, delta: type==='call'?(S>K?1:0):(S<K?-1:0), gamma:0, theta:0, vega:0 };
-      }
+      if (T <= 0) T = 0.0001 / 365;
       const sqrtT = Math.sqrt(T);
       const d1 = (Math.log(S/K) + (r + 0.5*sigma*sigma)*T) / (sigma*sqrtT);
       const d2 = d1 - sigma*sqrtT;
@@ -238,14 +280,12 @@ function optionCalc() {
         price = K * Math.exp(-r*T) * this.normCdf(-d2) - S * this.normCdf(-d1);
         delta = this.normCdf(d1) - 1;
       }
-      const gamma  = this.normPdf(d1) / (S * sigma * sqrtT);
       const theta  = (-(S * this.normPdf(d1) * sigma) / (2*sqrtT) - r*K*Math.exp(-r*T) * (type==='call'?this.normCdf(d2):this.normCdf(-d2))) / 365;
-      const vega   = S * this.normPdf(d1) * sqrtT / 100;
-      return { price: Math.max(price, 0), delta, gamma, theta, vega };
+      return { price: Math.max(price, 0), delta, theta };
     },
 
     pxAt(spxLevel) {
-      const T = this.dte / 365;
+      const T = Math.max(this.dte || 0, 0.0001) / 365;
       const r = this.rfr / 100;
       const s = this.iv / 100;
       const res = this.bs(spxLevel, this.strike, T, r, s, this.optType);
@@ -254,15 +294,23 @@ function optionCalc() {
 
     // ---------------------------------------------------------------
     compute() {
+      if (!this.spx || !this.strike || !this.iv || this.dte == null) {
+        this.greeks = [];
+        this.scenarioRows = [];
+        this._renderChart();
+        return;
+      }
       const cur = this.pxAt(this.spx);
+      const dispDelta = this.manualDelta != null ? this.manualDelta : cur.delta;
+      const dispTheta = this.manualTheta != null ? this.manualTheta : cur.theta;
+      const deltaSource = this.manualDelta != null ? 'from broker' : 'Black-Scholes';
+      const thetaSource = this.manualTheta != null ? 'from broker' : 'Black-Scholes';
 
       // Greeks strip
       this.greeks = [
-        { label: 'Option Price', value: '$' + cur.price.toFixed(2), desc: 'at current SPX' },
-        { label: 'Delta', value: cur.delta.toFixed(3), desc: 'per $1 SPX move' },
-        { label: 'Gamma', value: cur.gamma.toFixed(4), desc: 'delta change / $1' },
-        { label: 'Theta', value: '$' + cur.theta.toFixed(3), desc: 'per day decay' },
-        { label: 'Vega', value: '$' + cur.vega.toFixed(3), desc: 'per 1% IV move' },
+        { label: 'Option Price', value: '$' + cur.price.toFixed(2), desc: 'Black-Scholes est.' },
+        { label: 'Delta', value: dispDelta.toFixed(3), desc: deltaSource },
+        { label: 'Theta', value: '$' + dispTheta.toFixed(3), desc: thetaSource },
         { label: 'Break-even', value: this._breakeven(cur.price), desc: 'SPX at expiry' },
       ];
 
@@ -282,10 +330,12 @@ function optionCalc() {
         ? Math.abs(this.pxAt(this.slSpx).price - this.entryPrice) * 100 * this.qty : null;
 
       this.scenarioRows = steps.map(d => {
-        const p    = this.pxAt(this.spx + d).price;
+        const spxLevel = this.spx + d;
+        // For the current SPX row use entryPrice as the option cost (exact, not BS)
+        const p    = d === 0 && this.entryPrice > 0 ? this.entryPrice : this.pxAt(spxLevel).price;
         const pnl  = this.entryPrice > 0 ? (p - this.entryPrice) * 100 * this.qty : 0;
         const rr   = slRisk && slRisk > 0 ? (pnl >= 0 ? pnl / slRisk : null) : null;
-        return { delta: d, price: p, pnl, rr, highlight: d === 0 };
+        return { delta: d, spxLevel, price: p, pnl, rr, highlight: d === 0 };
       });
 
       this._renderChart();
@@ -293,8 +343,8 @@ function optionCalc() {
 
     _breakeven(optPrice) {
       const K = this.strike, ep = Number(optPrice);
-      if (this.optType === 'call') return String(K + ep);
-      return String(K - ep);
+      if (this.optType === 'call') return (K + ep).toFixed(2);
+      return (K - ep).toFixed(2);
     },
 
     // ---------------------------------------------------------------

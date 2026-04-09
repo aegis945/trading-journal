@@ -89,10 +89,34 @@ class IBKRClient:
                 self._ib.disconnect()
             self._run(_disconnect(), timeout=5)
 
+    def fetch_spx_price(self) -> float:
+        """Fetch the live SPX index price."""
+        import math
+        from ib_insync import Index
+
+        async def _fetch():
+            spx = Index('SPX', 'CBOE')
+            await self._ib.qualifyContractsAsync(spx)
+            ticker = self._ib.reqMktData(spx, genericTickList='', snapshot=False)
+            for _ in range(50):
+                await asyncio.sleep(0.1)
+                for candidate in (ticker.last, ticker.close, ticker.marketPrice()):
+                    if candidate is not None and math.isfinite(candidate) and candidate > 0:
+                        self._ib.cancelMktData(spx)
+                        return float(candidate)
+            self._ib.cancelMktData(spx)
+            # Last attempt after cancel
+            for candidate in (ticker.last, ticker.close, ticker.marketPrice()):
+                if candidate is not None and math.isfinite(candidate) and candidate > 0:
+                    return float(candidate)
+            raise RuntimeError('No SPX price available from TWS (market may be closed).')
+
+        return self._run(_fetch(), timeout=15)
+
     def fetch_greeks(self, symbol: str, expiry: str, strike: float, right: str) -> dict:
         """
         Fetches live bid/ask and model Greeks for a single SPX contract.
-        Returns dict with keys: delta, theta, vega, iv, bid, ask
+        Returns dict with keys: delta, theta, iv, optPrice, bid, ask
         expiry format: 'YYYYMMDD'
         right: 'C' or 'P'
         """
@@ -104,36 +128,53 @@ class IBKRClient:
             if not qualified:
                 raise RuntimeError(f'Contract not found: {symbol} {expiry} {strike} {right}')
 
+            import math
+
+            def _val(v):
+                """Return None for IBKR sentinel/missing values."""
+                if v is None:
+                    return None
+                f = float(v)
+                if not math.isfinite(f):
+                    return None
+                if f in (-1.0, 2147483647.0):
+                    return None
+                return f
+
             # Request market data — model greeks populate automatically for options
             ticker = self._ib.reqMktData(contract, genericTickList='', snapshot=False)
-            # Wait up to 6 seconds for model greeks to populate
-            for _ in range(60):
+            # Wait up to 8 seconds for model greeks AND bid/ask to populate
+            for _ in range(80):
                 await asyncio.sleep(0.1)
                 greeks = ticker.modelGreeks
-                if greeks and greeks.delta is not None:
+                have_greeks = greeks and greeks.delta is not None
+                have_bid_ask = _val(ticker.bid) is not None and _val(ticker.ask) is not None
+                if have_greeks and have_bid_ask:
                     break
 
             self._ib.cancelMktData(contract)
 
             greeks = ticker.modelGreeks or ticker.lastGreeks
 
-            def _val(v):
-                """Return None for IBKR sentinel values (-1, 2147483647)."""
-                if v is None:
-                    return None
-                f = float(v)
-                if f in (-1.0, 2147483647.0):
-                    return None
-                return f
+            print(f"\n[IBKR fetch_greeks] contract={symbol} {expiry} {strike} {right}")
+            print(f"  ticker.bid={ticker.bid!r}  ticker.ask={ticker.ask!r}")
+            print(f"  ticker.last={ticker.last!r}  ticker.close={ticker.close!r}")
+            print(f"  modelGreeks={ticker.modelGreeks!r}")
+            print(f"  lastGreeks={ticker.lastGreeks!r}")
+            if greeks:
+                print(f"  greeks.impliedVol={greeks.impliedVol!r}  greeks.delta={greeks.delta!r}")
+                print(f"  greeks.optPrice={greeks.optPrice!r}  greeks.undPrice={greeks.undPrice!r}")
 
-            return {
-                'delta': _val(greeks.delta)      if greeks else None,
-                'theta': _val(greeks.theta)      if greeks else None,
-                'vega':  _val(greeks.vega)       if greeks else None,
-                'iv':    _val(greeks.impliedVol) if greeks else None,
-                'bid':   _val(ticker.bid),
-                'ask':   _val(ticker.ask),
+            result = {
+                'delta':    _val(greeks.delta)      if greeks else None,
+                'theta':    _val(greeks.theta)      if greeks else None,
+                'iv':       _val(greeks.impliedVol) if greeks else None,
+                'optPrice': _val(greeks.optPrice)   if greeks else None,
+                'bid':      _val(ticker.bid),
+                'ask':      _val(ticker.ask),
             }
+            print(f"  => returning: {result}\n")
+            return result
 
         return self._run(_fetch(), timeout=15)
 
