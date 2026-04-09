@@ -232,7 +232,7 @@
       {% if journal_entries %}
       <div class="space-y-1.5">
         {% for entry in journal_entries %}
-        <a href="{% url 'journal_detail' entry.pk %}"
+        <a href="{% url 'journal_edit' entry.pk %}"
            class="block px-3 py-2.5 rounded-lg border transition-colors"
            style="border-color:var(--border);background:rgba(255,255,255,0.015);"
            onmouseover="this.style.background='rgba(255,255,255,0.04)'"

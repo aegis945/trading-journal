@@ -27,7 +27,6 @@ urlpatterns = [
     # Journal entries
     path('journal/', views.journal_list, name='journal_list'),
     path('journal/new/', views.journal_new, name='journal_new'),
-    path('journal/<int:pk>/', views.journal_detail, name='journal_detail'),
     path('journal/<int:pk>/edit/', views.journal_edit, name='journal_edit'),
     path('journal/<int:pk>/delete/', views.journal_delete, name='journal_delete'),
 

@@ -5,7 +5,7 @@
 
 <div class="max-w-3xl">
   <div class="card p-6 animate-in">
-    <form method="POST">
+    <form method="POST" novalidate>
       {% csrf_token %}
       <div class="space-y-4">
         <div>
@@ -57,9 +57,29 @@
 {% endblock %}
 {% block extra_scripts %}
 <script>
+  const textarea = document.getElementById('journal-editor');
+
+  {% if not entry %}
+  // Clear autosave so a new entry always starts blank
+  localStorage.removeItem('smde-journal-entry');
+  {% endif %}
+
   const easyMDE = new EasyMDE({
-    element: document.getElementById('journal-editor'),
-    spellChecker: false, autosave: { enabled: true, uniqueId: 'journal-entry' },
+    element: textarea,
+    spellChecker: false,
+    autosave: { enabled: {% if entry %}true{% else %}false{% endif %}, uniqueId: 'journal-entry' },
+    onChange: function () {
+      textarea.value = easyMDE.value();
+    },
+  });
+
+  {% if not entry %}
+  // Force blank — disabling autosave is enough, but belt-and-braces:
+  easyMDE.value('');
+  {% endif %}
+
+  document.querySelector('form').addEventListener('submit', function () {
+    textarea.value = easyMDE.value();
   });
 </script>
 {% endblock %}

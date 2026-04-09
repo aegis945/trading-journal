@@ -11,7 +11,7 @@
     <p class="text-sm" style="color:var(--text-primary)">Delete <strong>"{{ entry.title }}"</strong>?</p>
   </div>
   <div class="flex gap-3">
-    <a href="{% url 'journal_detail' entry.pk %}"
+    <a href="{% url 'journal_list' %}"
       class="px-4 py-2 text-sm rounded-lg transition-colors"
       style="background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)"
       onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-secondary)'">Cancel</a>

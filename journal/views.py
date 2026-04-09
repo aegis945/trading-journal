@@ -614,16 +614,11 @@ def journal_new(request):
     if request.method == 'POST':
         form = JournalEntryForm(request.POST)
         if form.is_valid():
-            entry = form.save()
-            return redirect('journal_detail', pk=entry.pk)
+            form.save()
+            return redirect('journal_list')
     else:
         form = JournalEntryForm()
     return render(request, 'journal/journal_form.html', {'form': form, 'title': 'New Entry'})
-
-
-def journal_detail(request, pk):
-    entry = get_object_or_404(JournalEntry, pk=pk)
-    return render(request, 'journal/journal_detail.html', {'entry': entry})
 
 
 def journal_edit(request, pk):
@@ -633,7 +628,7 @@ def journal_edit(request, pk):
         form = JournalEntryForm(request.POST, instance=entry)
         if form.is_valid():
             form.save()
-            return redirect('journal_detail', pk=pk)
+            return redirect('journal_list')
     else:
         form = JournalEntryForm(instance=entry)
     return render(request, 'journal/journal_form.html', {'form': form, 'entry': entry, 'title': 'Edit Entry'})
