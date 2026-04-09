@@ -102,10 +102,12 @@
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-sm font-semibold" style="color:var(--text-primary)">Trades</h2>
         <div class="flex items-center gap-3">
+          {% if real_trades or paper_trades %}
           <span class="mono text-sm font-semibold"
             style="color:{% if real_pnl > 0 %}var(--profit){% elif real_pnl < 0 %}var(--loss){% else %}var(--text-muted){% endif %}">
             {% if paper_trades %}Live{% else %}Session{% endif %} P&L: {{ real_pnl|pnl_str }}
           </span>
+          {% endif %}
           <a href="{% url 'trade_add' %}"
             class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
             style="background:var(--accent-glow);color:var(--accent);border:1px solid rgba(59,130,246,0.2)"
