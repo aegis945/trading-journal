@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path('', views.analytics_index, name='analytics'),
     path('review/', views.performance_review, name='performance_review'),
+    path('option-calculator/', views.option_calculator, name='option_calculator'),
 
     # JSON endpoints for Chart.js
     path('data/win-rate-by-tag/', views.data_win_rate_by_tag, name='data_win_rate_by_tag'),

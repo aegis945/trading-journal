@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+{% block title %}Option Calculator{% endblock %}
+{% block page_title %}Option Calculator{% endblock %}
+
+{% block content %}
+<div x-data="optionCalc()" x-init="init()" class="space-y-5 animate-in">
+
+  <!-- Input panel -->
+  <div class="card p-5">
+    <div class="flex items-center gap-2 mb-4">
+      <i data-lucide="function-square" style="width:14px;height:14px;color:var(--text-secondary)"></i>
+      <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Contract Parameters</h3>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div class="lg:col-span-2">
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">SPX Price (current)</label>
+        <input type="number" x-model.number="spx" @input="compute()" step="1"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Strike</label>
+        <input type="number" x-model.number="strike" @input="compute()" step="5"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Type</label>
+        <select x-model="optType" @change="compute()"
+          class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+          <option value="call">Call</option>
+          <option value="put">Put</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Days to Expiry</label>
+        <input type="number" x-model.number="dte" @input="compute()" min="0" step="1"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">IV (%)</label>
+        <input type="number" x-model.number="iv" @input="compute()" step="0.5" min="1"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Entry Price ($)</label>
+        <input type="number" x-model.number="entryPrice" @input="compute()" step="0.01" min="0"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+    </div>
+
+    <!-- TP / SL overlays -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4" style="border-top:1px solid var(--border)">
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">TP 1 — SPX target</label>
+        <input type="number" x-model.number="tp1Spx" @input="compute()" step="1" placeholder="e.g. 5520"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">TP 2 — SPX target</label>
+        <input type="number" x-model.number="tp2Spx" @input="compute()" step="1" placeholder="optional"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">SL — SPX level</label>
+        <input type="number" x-model.number="slSpx" @input="compute()" step="1" placeholder="e.g. 5480"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+      <div>
+        <label class="block text-xs mb-1" style="color:var(--text-secondary)">Contracts (qty)</label>
+        <input type="number" x-model.number="qty" @input="compute()" min="1" step="1"
+          class="w-full rounded-lg px-3 py-2 text-sm mono focus:outline-none"
+          style="background:var(--bg-base);border:1px solid var(--border);color:var(--text-primary)">
+      </div>
+    </div>
+  </div>
+
+  <!-- Greeks summary strip -->
+  <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+    <template x-for="g in greeks" :key="g.label">
+      <div class="card p-3">
+        <p class="text-xs" style="color:var(--text-muted)" x-text="g.label"></p>
+        <p class="mono text-base font-semibold mt-1" style="color:var(--text-primary)" x-text="g.value"></p>
+        <p class="text-xs mt-0.5" style="color:var(--text-secondary)" x-text="g.desc"></p>
+      </div>
+    </template>
+  </div>
+
+  <!-- Chart + P&L table -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- Price curve chart -->
+    <div class="card p-5 lg:col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="trending-up" style="width:14px;height:14px;color:var(--text-secondary)"></i>
+          <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Option Price vs SPX Move</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs" style="color:var(--text-muted)">Range ±</span>
+          <select x-model.number="range" @change="compute()" class="text-xs rounded px-2 py-1 focus:outline-none"
+            style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary)">
+            <option value="100">100 pts</option>
+            <option value="150">150 pts</option>
+            <option value="200" selected>200 pts</option>
+            <option value="300">300 pts</option>
+          </select>
+          <div class="flex gap-2 text-xs">
+            <label class="flex items-center gap-1 cursor-pointer" style="color:var(--text-secondary)">
+              <input type="checkbox" x-model="showPnl" @change="compute()"> P&amp;L
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer" style="color:var(--text-secondary)">
+              <input type="checkbox" x-model="showDelta" @change="compute()"> Delta
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="relative" style="height:360px">
+        <canvas id="optionChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Scenario table -->
+    <div class="card p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="table-2" style="width:14px;height:14px;color:var(--text-secondary)"></i>
+        <h3 class="text-sm font-semibold" style="color:var(--text-primary)">Scenario Table</h3>
+      </div>
+      <table class="w-full text-xs">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border)">
+            <th class="pb-2 text-left font-medium uppercase tracking-wider" style="color:var(--text-muted)">SPX Δ</th>
+            <th class="pb-2 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">Opt $</th>
+            <th class="pb-2 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">P&amp;L</th>
+            <th class="pb-2 text-right font-medium uppercase tracking-wider" style="color:var(--text-muted)">R:R</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="row in scenarioRows" :key="row.delta">
+            <tr :style="row.highlight ? 'background:rgba(59,130,246,0.06);border-radius:6px' : ''"
+                style="border-bottom:1px solid rgba(255,255,255,0.04)">
+              <td class="py-1.5 mono" :style="row.delta > 0 ? 'color:var(--profit)' : row.delta < 0 ? 'color:var(--loss)' : 'color:var(--text-primary)'"
+                  x-text="(row.delta > 0 ? '+' : '') + row.delta"></td>
+              <td class="py-1.5 mono text-right" style="color:var(--text-primary)" x-text="'$' + row.price.toFixed(2)"></td>
+              <td class="py-1.5 mono text-right font-semibold"
+                  :style="row.pnl > 0 ? 'color:var(--profit)' : row.pnl < 0 ? 'color:var(--loss)' : 'color:var(--text-secondary)'"
+                  x-text="row.pnl >= 0 ? '+$' + row.pnl.toFixed(0) : '-$' + Math.abs(row.pnl).toFixed(0)"></td>
+              <td class="py-1.5 mono text-right" style="color:var(--accent)"
+                  x-text="row.rr !== null ? row.rr.toFixed(2) + ':1' : '—'"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+
+      <!-- TP/SL translated prices -->
+      <div class="mt-4 pt-4 space-y-2" style="border-top:1px solid var(--border)">
+        <p class="text-xs uppercase tracking-wider mb-2" style="color:var(--text-muted)">Level Translator</p>
+        <template x-if="tp1Spx">
+          <div class="flex justify-between text-xs">
+            <span style="color:var(--text-secondary)">TP1 @ SPX <span class="mono" x-text="tp1Spx"></span></span>
+            <span class="mono font-semibold" style="color:var(--profit)" x-text="'$' + tp1Price.toFixed(2) + ' (+$' + Math.max(0,(tp1Price - entryPrice)*100*qty).toFixed(0) + ')'"></span>
+          </div>
+        </template>
+        <template x-if="tp2Spx">
+          <div class="flex justify-between text-xs">
+            <span style="color:var(--text-secondary)">TP2 @ SPX <span class="mono" x-text="tp2Spx"></span></span>
+            <span class="mono font-semibold" style="color:var(--profit)" x-text="'$' + tp2Price.toFixed(2) + ' (+$' + Math.max(0,(tp2Price - entryPrice)*100*qty).toFixed(0) + ')'"></span>
+          </div>
+        </template>
+        <template x-if="slSpx">
+          <div class="flex justify-between text-xs">
+            <span style="color:var(--text-secondary)">SL @ SPX <span class="mono" x-text="slSpx"></span></span>
+            <span class="mono font-semibold" style="color:var(--loss)" x-text="'$' + slPrice.toFixed(2) + ' (-$' + Math.abs(Math.min(0,(slPrice - entryPrice)*100*qty)).toFixed(0) + ')'"></span>
+          </div>
+        </template>
+        <template x-if="tp1Spx && slSpx">
+          <div class="flex justify-between text-xs pt-1" style="border-top:1px solid var(--border)">
+            <span style="color:var(--text-secondary)">R:R (TP1 / SL)</span>
+            <span class="mono font-semibold" style="color:var(--accent)" x-text="rr1.toFixed(2) + ':1'"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function optionCalc() {
+  return {
+    // Inputs
+    spx: 5500, strike: 5500, optType: 'call', dte: 1, iv: 18, rfr: 4.3,
+    entryPrice: 5.0, tp1Spx: null, tp2Spx: null, slSpx: null, qty: 1,
+    range: 200, showPnl: true, showDelta: false,
+
+    // Derived
+    greeks: [],
+    scenarioRows: [],
+    tp1Price: 0, tp2Price: 0, slPrice: 0, rr1: 0,
+    _chart: null,
+
+    init() { this.compute(); },
+
+    // ---------------------------------------------------------------
+    // Black-Scholes
+    // ---------------------------------------------------------------
+    normCdf(x) {
+      const a1=0.254829592, a2=-0.284496736, a3=1.421413741,
+            a4=-1.453152027, a5=1.061405429, p=0.3275911;
+      const sign = x < 0 ? -1 : 1;
+      x = Math.abs(x) / Math.sqrt(2);
+      const t = 1 / (1 + p * x);
+      const y = 1 - (((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t * Math.exp(-x*x);
+      return 0.5 * (1 + sign * y);
+    },
+    normPdf(x) { return Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI); },
+
+    bs(S, K, T, r, sigma, type) {
+      if (T <= 0) {
+        const intrinsic = type === 'call' ? Math.max(S-K,0) : Math.max(K-S,0);
+        return { price: intrinsic, delta: type==='call'?(S>K?1:0):(S<K?-1:0), gamma:0, theta:0, vega:0 };
+      }
+      const sqrtT = Math.sqrt(T);
+      const d1 = (Math.log(S/K) + (r + 0.5*sigma*sigma)*T) / (sigma*sqrtT);
+      const d2 = d1 - sigma*sqrtT;
+      let price, delta;
+      if (type === 'call') {
+        price = S * this.normCdf(d1) - K * Math.exp(-r*T) * this.normCdf(d2);
+        delta = this.normCdf(d1);
+      } else {
+        price = K * Math.exp(-r*T) * this.normCdf(-d2) - S * this.normCdf(-d1);
+        delta = this.normCdf(d1) - 1;
+      }
+      const gamma  = this.normPdf(d1) / (S * sigma * sqrtT);
+      const theta  = (-(S * this.normPdf(d1) * sigma) / (2*sqrtT) - r*K*Math.exp(-r*T) * (type==='call'?this.normCdf(d2):this.normCdf(-d2))) / 365;
+      const vega   = S * this.normPdf(d1) * sqrtT / 100;
+      return { price: Math.max(price, 0), delta, gamma, theta, vega };
+    },
+
+    pxAt(spxLevel) {
+      const T = this.dte / 365;
+      const r = this.rfr / 100;
+      const s = this.iv / 100;
+      const res = this.bs(spxLevel, this.strike, T, r, s, this.optType);
+      return res;
+    },
+
+    // ---------------------------------------------------------------
+    compute() {
+      const cur = this.pxAt(this.spx);
+
+      // Greeks strip
+      this.greeks = [
+        { label: 'Option Price', value: '$' + cur.price.toFixed(2), desc: 'at current SPX' },
+        { label: 'Delta', value: cur.delta.toFixed(3), desc: 'per $1 SPX move' },
+        { label: 'Gamma', value: cur.gamma.toFixed(4), desc: 'delta change / $1' },
+        { label: 'Theta', value: '$' + cur.theta.toFixed(3), desc: 'per day decay' },
+        { label: 'Vega', value: '$' + cur.vega.toFixed(3), desc: 'per 1% IV move' },
+        { label: 'Break-even', value: this._breakeven(cur.price), desc: 'SPX at expiry' },
+      ];
+
+      // TP/SL translated prices
+      if (this.tp1Spx) this.tp1Price = this.pxAt(this.tp1Spx).price;
+      if (this.tp2Spx) this.tp2Price = this.pxAt(this.tp2Spx).price;
+      if (this.slSpx)  this.slPrice  = this.pxAt(this.slSpx).price;
+      if (this.tp1Spx && this.slSpx && this.entryPrice > 0) {
+        const reward = Math.abs(this.tp1Price - this.entryPrice);
+        const risk   = Math.abs(this.slPrice  - this.entryPrice);
+        this.rr1 = risk > 0 ? reward / risk : 0;
+      }
+
+      // Scenario rows (fixed steps)
+      const steps = [-100,-80,-60,-40,-30,-20,-10,-5,0,5,10,20,30,40,60,80,100];
+      const slRisk = this.slSpx && this.entryPrice > 0
+        ? Math.abs(this.pxAt(this.slSpx).price - this.entryPrice) * 100 * this.qty : null;
+
+      this.scenarioRows = steps.map(d => {
+        const p    = this.pxAt(this.spx + d).price;
+        const pnl  = this.entryPrice > 0 ? (p - this.entryPrice) * 100 * this.qty : 0;
+        const rr   = slRisk && slRisk > 0 ? (pnl >= 0 ? pnl / slRisk : null) : null;
+        return { delta: d, price: p, pnl, rr, highlight: d === 0 };
+      });
+
+      this._renderChart();
+    },
+
+    _breakeven(optPrice) {
+      const K = this.strike, ep = Number(optPrice);
+      if (this.optType === 'call') return String(K + ep);
+      return String(K - ep);
+    },
+
+    // ---------------------------------------------------------------
+    _renderChart() {
+      const n    = 80;
+      const step = (this.range * 2) / n;
+      const labels = [], priceData = [], pnlData = [], deltaData = [];
+
+      for (let i = 0; i <= n; i++) {
+        const s = this.spx - this.range + i * step;
+        const { price, delta } = this.pxAt(s);
+        labels.push(s.toFixed(0));
+        priceData.push(price);
+        pnlData.push(this.entryPrice > 0 ? (price - this.entryPrice) * 100 * this.qty : null);
+        deltaData.push(delta);
+      }
+
+      const annotations = this._buildAnnotations();
+
+      const datasets = [
+        {
+          label: 'Option Price ($)',
+          data: priceData,
+          borderColor: 'rgba(59,130,246,0.9)',
+          backgroundColor: 'rgba(59,130,246,0.06)',
+          fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2,
+          yAxisID: 'yPrice',
+        },
+      ];
+      if (this.showPnl && this.entryPrice > 0) {
+        datasets.push({
+          label: 'P&L ($)',
+          data: pnlData,
+          borderColor: 'rgba(16,185,129,0.8)',
+          backgroundColor: 'transparent',
+          fill: false, tension: 0.3, pointRadius: 0, borderWidth: 1.5, borderDash: [4,3],
+          yAxisID: 'yPrice',
+        });
+      }
+      if (this.showDelta) {
+        datasets.push({
+          label: 'Delta',
+          data: deltaData,
+          borderColor: 'rgba(251,191,36,0.8)',
+          backgroundColor: 'transparent',
+          fill: false, tension: 0.3, pointRadius: 0, borderWidth: 1.5, borderDash: [2,4],
+          yAxisID: 'yDelta',
+        });
+      }
+
+      if (this._chart) { this._chart.destroy(); }
+
+      const ctx = document.getElementById('optionChart').getContext('2d');
+      this._chart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { labels: { color: 'rgba(148,163,184,0.9)', font: { size: 11 } } },
+            tooltip: {
+              backgroundColor: 'rgba(15,23,42,0.95)',
+              borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+              titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+              callbacks: {
+                title: (items) => 'SPX ' + items[0].label,
+                label: (item) => ' ' + item.dataset.label + ': ' + (item.parsed.y !== null ? item.parsed.y.toFixed(2) : '—'),
+              }
+            },
+            annotation: { annotations },
+          },
+          scales: {
+            x: {
+              ticks: { color: 'rgba(148,163,184,0.7)', font: { size: 10 }, maxTicksLimit: 10 },
+              grid: { color: 'rgba(255,255,255,0.04)' },
+            },
+            yPrice: {
+              position: 'left',
+              ticks: { color: 'rgba(148,163,184,0.7)', font: { size: 10 }, callback: v => '$' + v.toFixed(2) },
+              grid: { color: 'rgba(255,255,255,0.04)' },
+            },
+            yDelta: {
+              position: 'right',
+              display: this.showDelta,
+              min: -1, max: 1,
+              ticks: { color: 'rgba(251,191,36,0.6)', font: { size: 10 } },
+              grid: { display: false },
+            },
+          },
+        },
+      });
+    },
+
+    _buildAnnotations() {
+      const annotations = {};
+      // Current SPX vertical
+      annotations['spxNow'] = {
+        type: 'line', scaleID: 'x',
+        value: String(this.spx.toFixed(0)),
+        borderColor: 'rgba(148,163,184,0.4)', borderWidth: 1, borderDash: [4,4],
+        label: { display: true, content: 'Now', color: '#94a3b8', font: { size: 10 }, position: 'start' },
+      };
+      if (this.entryPrice > 0) {
+        annotations['entry'] = {
+          type: 'line', scaleID: 'yPrice', value: this.entryPrice,
+          borderColor: 'rgba(255,255,255,0.2)', borderWidth: 1, borderDash: [3,3],
+          label: { display: true, content: 'Entry $' + this.entryPrice, color: '#94a3b8', font: { size: 10 }, position: 'end' },
+        };
+      }
+      if (this.tp1Spx) {
+        annotations['tp1'] = {
+          type: 'line', scaleID: 'x', value: String(Number(this.tp1Spx).toFixed(0)),
+          borderColor: 'rgba(16,185,129,0.6)', borderWidth: 1.5,
+          label: { display: true, content: 'TP1', color: '#10b981', font: { size: 10 }, position: 'end' },
+        };
+      }
+      if (this.tp2Spx) {
+        annotations['tp2'] = {
+          type: 'line', scaleID: 'x', value: String(Number(this.tp2Spx).toFixed(0)),
+          borderColor: 'rgba(16,185,129,0.35)', borderWidth: 1.5,
+          label: { display: true, content: 'TP2', color: '#6ee7b7', font: { size: 10 }, position: 'end' },
+        };
+      }
+      if (this.slSpx) {
+        annotations['sl'] = {
+          type: 'line', scaleID: 'x', value: String(Number(this.slSpx).toFixed(0)),
+          borderColor: 'rgba(244,63,94,0.6)', borderWidth: 1.5,
+          label: { display: true, content: 'SL', color: '#f43f5e', font: { size: 10 }, position: 'end' },
+        };
+      }
+      return annotations;
+    },
+  };
+}
+</script>
+
+<!-- chartjs-plugin-annotation for vertical/horizontal lines -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3/dist/chartjs-plugin-annotation.min.js"></script>
+
+{% endblock %}

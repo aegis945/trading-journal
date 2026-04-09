@@ -24,6 +24,10 @@ def analytics_index(request):
     return render(request, 'analytics/index.html', {'periods': periods})
 
 
+def option_calculator(request):
+    return render(request, 'analytics/option_calculator.html')
+
+
 def performance_review(request):
     week_start = _resolve_review_week_start(request)
     week_end = week_start + datetime.timedelta(days=6)
