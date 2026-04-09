@@ -425,7 +425,7 @@ class TradeListTagFilterTests(TestCase):
 		self.assertTrue(form.is_valid(), form.errors)
 		trade = form.save()
 		self.assertEqual(trade.rule_review, RuleReview.BROKE)
-		self.assertEqual(trade.rule_break_tags, ['early entry', 'oversized'])
+		self.assertEqual(trade.rule_break_tags, ['Early entry', 'Oversized'])
 		self.assertIn('waiting for confirmation', trade.rule_break_notes)
 
 	def test_trade_form_requires_rule_break_context_when_marked_broke(self):
@@ -911,13 +911,13 @@ class WeeklyReviewTests(TestCase):
 			rule_review=RuleReview.FOLLOWED,
 			trade_notes='Waited for reclaim and took the retest entry.',
 		)
-		JournalEntry.objects.create(
+		entry = JournalEntry.objects.create(
 			title='Weekly lesson',
 			content='Patience improved my entries this week.',
 			entry_type=EntryType.LESSON,
-			trade=trade,
 			session=session,
 		)
+		entry.trades.add(trade)
 
 		response = self.client.get(reverse('performance_review'), {'week': '2026-04-07'})
 
@@ -1381,4 +1381,228 @@ class PaperTradeDetailTests(TestCase):
 
 		trade = Trade.objects.get()
 		self.assertFalse(trade.is_paper_trade)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: M2M trades on JournalEntry
+# ---------------------------------------------------------------------------
+
+def _make_simple_trade(date=None):
+	date = date or _market_day()
+	return Trade.objects.create(
+		trade_date=date,
+		symbol='SPX',
+		option_type=OptionType.PUT,
+		trade_type=TradeType.LONG_PUT,
+		strike='5000',
+		expiry=date,
+		quantity=1,
+		entry_price='5.00',
+		entry_time='09:30',
+		status=TradeStatus.OPEN,
+	)
+
+
+class JournalEntryTradesManyToManyTests(TestCase):
+	"""JournalEntry.trade FK was replaced with trades M2M — verify the new behaviour."""
+
+	def test_journal_entry_can_link_multiple_trades(self):
+		t1 = _make_simple_trade()
+		t2 = _make_simple_trade()
+		entry = JournalEntry.objects.create(title='Multi', content='body', entry_type=EntryType.OBSERVATION)
+		entry.trades.set([t1, t2])
+		self.assertEqual(entry.trades.count(), 2)
+
+	def test_journal_entry_with_no_trades_is_valid(self):
+		entry = JournalEntry.objects.create(title='Solo', content='body', entry_type=EntryType.OBSERVATION)
+		self.assertEqual(entry.trades.count(), 0)
+
+	def test_reverse_relation_from_trade(self):
+		trade = _make_simple_trade()
+		entry = JournalEntry.objects.create(title='Linked', content='body', entry_type=EntryType.OBSERVATION)
+		entry.trades.add(trade)
+		self.assertIn(entry, trade.journal_entries.all())
+
+	def test_journal_list_view_ok(self):
+		entry = JournalEntry.objects.create(title='List test', content='body', entry_type=EntryType.OBSERVATION)
+		t = _make_simple_trade()
+		entry.trades.add(t)
+		response = self.client.get(reverse('journal_list'))
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'List test')
+
+	def test_journal_list_shows_trade_count_not_individual_links(self):
+		entry = JournalEntry.objects.create(title='Count test', content='body', entry_type=EntryType.OBSERVATION)
+		t1 = _make_simple_trade()
+		t2 = _make_simple_trade()
+		entry.trades.set([t1, t2])
+		response = self.client.get(reverse('journal_list'))
+		# Should show "2 linked trades" not individual trade strings
+		self.assertContains(response, '2 linked trade')
+		self.assertNotContains(response, 'Linked trade: SPX')
+
+	def test_journal_form_save_creates_m2m(self):
+		t = _make_simple_trade()
+		response = self.client.post(reverse('journal_new'), {
+			'title': 'Form M2M test',
+			'entry_type': EntryType.OBSERVATION,
+			'content': 'some content',
+			'trades': [t.pk],
+			'session': '',
+		}, follow=True)
+		self.assertEqual(response.status_code, 200)
+		entry = JournalEntry.objects.get(title='Form M2M test')
+		self.assertIn(t, entry.trades.all())
+
+	def test_journal_form_save_multiple_trades(self):
+		t1 = _make_simple_trade()
+		t2 = _make_simple_trade()
+		self.client.post(reverse('journal_new'), {
+			'title': 'Two trades',
+			'entry_type': EntryType.OBSERVATION,
+			'content': 'content',
+			'trades': [t1.pk, t2.pk],
+			'session': '',
+		})
+		entry = JournalEntry.objects.get(title='Two trades')
+		self.assertEqual(entry.trades.count(), 2)
+
+	def test_dashboard_loads_without_trade_select_related_error(self):
+		"""Regression: dashboard used select_related('trade') which no longer exists."""
+		JournalEntry.objects.create(title='Dash entry', content='body', entry_type=EntryType.OBSERVATION)
+		day = _market_day()
+		with patch('journal.views.timezone.localdate', return_value=day):
+			response = self.client.get(reverse('dashboard'))
+		self.assertEqual(response.status_code, 200)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: tag auto-capitalisation
+# ---------------------------------------------------------------------------
+
+class TagCapitalisationTests(TestCase):
+	"""Tags should have only their first character uppercased; the rest preserved."""
+
+	def _post_trade(self, strategy_tags='', rule_break_tags=''):
+		day = _market_day()
+		data = {
+			'trade_date': day.isoformat(),
+			'symbol': 'SPX',
+			'option_type': OptionType.PUT,
+			'trade_type': TradeType.LONG_PUT,
+			'strike': '5000',
+			'expiry': day.isoformat(),
+			'quantity': 1,
+			'entry_price': '5.00',
+			'entry_time': '09:30',
+			'status': TradeStatus.OPEN,
+			'strategy_tags_text': strategy_tags,
+			'rule_break_tags_text': rule_break_tags,
+			'rule_review': RuleReview.BROKE if rule_break_tags else '',
+		}
+		if rule_break_tags:
+			data['rule_break_notes'] = 'test note'
+		self.client.post(reverse('trade_add'), data)
+		return Trade.objects.order_by('-pk').first()
+
+	def test_lowercase_strategy_tag_gets_first_letter_uppercased(self):
+		trade = self._post_trade(strategy_tags='gap fill')
+		self.assertIn('Gap fill', trade.strategy_tags)
+
+	def test_allcaps_strategy_tag_preserved(self):
+		trade = self._post_trade(strategy_tags='VWAP reclaim')
+		self.assertIn('VWAP reclaim', trade.strategy_tags)
+
+	def test_lowercase_rule_break_tag_gets_first_letter_uppercased(self):
+		trade = self._post_trade(rule_break_tags='early entry')
+		self.assertIn('Early entry', trade.rule_break_tags)
+
+	def test_allcaps_rule_break_tag_preserved(self):
+		trade = self._post_trade(rule_break_tags='FOMO')
+		self.assertIn('FOMO', trade.rule_break_tags)
+
+	def test_multiple_tags_each_capitalised(self):
+		trade = self._post_trade(strategy_tags='gap fill, VWAP, momentum')
+		self.assertIn('Gap fill', trade.strategy_tags)
+		self.assertIn('VWAP', trade.strategy_tags)
+		self.assertIn('Momentum', trade.strategy_tags)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: rule-break tag chips auto-populate from trades
+# ---------------------------------------------------------------------------
+
+class RuleBreakTagOptionsTemplateTagTests(TestCase):
+	"""rule_break_tag_options should return tags from existing trades, not hardcoded defaults."""
+
+	def test_no_hardcoded_defaults_when_no_trades_exist(self):
+		from journal.templatetags.journal_extras import rule_break_tag_options
+		# No trades in DB and empty preferences — should return empty (no hardcoded presets)
+		prefs, _ = AppPreferences.objects.get_or_create(pk=1)
+		prefs.rule_break_tag_templates = []
+		prefs.save()
+		result = rule_break_tag_options()
+		self.assertEqual(result, [])
+
+	def test_returns_tags_from_saved_trades(self):
+		from journal.templatetags.journal_extras import rule_break_tag_options
+		prefs, _ = AppPreferences.objects.get_or_create(pk=1)
+		prefs.rule_break_tag_templates = []
+		prefs.save()
+		day = _market_day()
+		Trade.objects.create(
+			trade_date=day, symbol='SPX', option_type=OptionType.PUT,
+			trade_type=TradeType.LONG_PUT, strike='5000', expiry=day,
+			quantity=1, entry_price='5.00', entry_time='09:30', status=TradeStatus.OPEN,
+			rule_break_tags=['Oversized', 'FOMO'],
+		)
+		result = rule_break_tag_options()
+		self.assertIn('Oversized', result)
+		self.assertIn('FOMO', result)
+
+	def test_strategy_tag_options_returns_tags_from_saved_trades(self):
+		from journal.templatetags.journal_extras import strategy_tag_options
+		day = _market_day()
+		Trade.objects.create(
+			trade_date=day, symbol='SPX', option_type=OptionType.PUT,
+			trade_type=TradeType.LONG_PUT, strike='5000', expiry=day,
+			quantity=1, entry_price='5.00', entry_time='09:30', status=TradeStatus.OPEN,
+			strategy_tags=['VWAP reclaim', 'Gap fill'],
+		)
+		result = strategy_tag_options()
+		self.assertIn('VWAP reclaim', result)
+		self.assertIn('Gap fill', result)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests: journal new/edit redirects
+# ---------------------------------------------------------------------------
+
+class JournalRedirectTests(TestCase):
+	"""After save, journal should redirect to the list, not a detail page."""
+
+	def test_new_entry_redirects_to_list(self):
+		response = self.client.post(reverse('journal_new'), {
+			'title': 'Redirect test',
+			'entry_type': EntryType.OBSERVATION,
+			'content': 'body',
+			'session': '',
+		})
+		self.assertRedirects(response, reverse('journal_list'))
+
+	def test_edit_entry_redirects_to_list(self):
+		entry = JournalEntry.objects.create(title='To edit', content='body', entry_type=EntryType.OBSERVATION)
+		response = self.client.post(reverse('journal_edit', args=[entry.pk]), {
+			'title': 'Edited',
+			'entry_type': EntryType.OBSERVATION,
+			'content': 'updated',
+			'session': '',
+		})
+		self.assertRedirects(response, reverse('journal_list'))
+
+	def test_journal_detail_url_does_not_exist(self):
+		"""The /journal/<pk>/ detail endpoint was removed."""
+		entry = JournalEntry.objects.create(title='X', content='y', entry_type=EntryType.OBSERVATION)
+		response = self.client.get(f'/journal/{entry.pk}/')
+		self.assertEqual(response.status_code, 404)
 
