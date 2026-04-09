@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Delete Goal{% endblock %}
-{% block page_title %}Delete Goal{% endblock %}
+{% block page_title %}<span class="inline-flex items-center gap-2">
+  <a href="{% url 'goals' %}"
+     class="inline-flex items-center justify-center w-6 h-6 rounded-md border transition-colors"
+     style="border-color:var(--border);color:var(--text-secondary);flex-shrink:0;"
+     onmouseover="this.style.background='rgba(255,255,255,0.07)';this.style.color='var(--text-primary)'"
+     onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">
+    <i data-lucide="arrow-left" style="width:12px;height:12px;"></i>
+  </a>
+  Delete Goal
+</span>{% endblock %}
 {% block content %}
 
 <div class="max-w-sm card p-6 animate-in">
