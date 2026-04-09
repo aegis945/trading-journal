@@ -657,20 +657,47 @@ def calculate_process_metrics(start_date, end_date):
     session_prep_completed = sum(1 for session in sessions if session.is_pre_market_complete)
     session_review_completed = sum(1 for session in sessions if session.has_post_session_reflection)
 
-    reviewed_trades = Trade.objects.filter(
+    reviewed_trades = list(Trade.objects.filter(
         trade_date__range=(start_date, end_date),
         status__in=[TradeStatus.CLOSED, TradeStatus.EXPIRED],
         rule_review__in=[RuleReview.FOLLOWED, RuleReview.BROKE],
-    )
-    reviewed_trade_count = reviewed_trades.count()
-    followed_trade_count = reviewed_trades.filter(rule_review=RuleReview.FOLLOWED).count()
+    ))
+    reviewed_trade_count = len(reviewed_trades)
+
+    # Weighted per-trade process score (max 100 pts):
+    #   rule_review=FOLLOWED  → 40 pts  (core discipline)
+    #   trade_notes filled    → 25 pts  (pre-trade rationale)
+    #   planned_stop_loss set → 20 pts  (risk plan)
+    #   exit_notes filled     → 15 pts  (post-trade reflection)
+    #   ta_screenshot         →  0 pts  (no impact)
+    _W_RULE    = 40
+    _W_NOTES   = 25
+    _W_SL      = 20
+    _W_EXIT    = 15
+
+    def _trade_score(trade):
+        score = 0
+        if trade.rule_review == RuleReview.FOLLOWED:
+            score += _W_RULE
+        if trade.trade_notes and trade.trade_notes.strip():
+            score += _W_NOTES
+        if trade.planned_stop_loss is not None:
+            score += _W_SL
+        if trade.exit_notes and trade.exit_notes.strip():
+            score += _W_EXIT
+        return score
+
+    if reviewed_trade_count:
+        total_score = sum(_trade_score(t) for t in reviewed_trades)
+        rule_follow_rate = round(total_score / reviewed_trade_count, 1)
+    else:
+        rule_follow_rate = None
 
     def _percentage(part, total):
         if not total:
             return None
         return round(part / total * 100, 1)
 
-    rule_follow_rate = _percentage(followed_trade_count, reviewed_trade_count)
     session_prep_rate = _percentage(session_prep_completed, session_count)
     session_review_rate = _percentage(session_review_completed, session_count)
 

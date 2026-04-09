@@ -564,6 +564,9 @@ class PerformanceGoalTests(TestCase):
 			trade_type=TradeType.LONG_CALL,
 			status=TradeStatus.CLOSED,
 			rule_review=RuleReview.FOLLOWED,
+			trade_notes='Waited for confirmation before entry.',
+			planned_stop_loss='4.00',
+			exit_notes='Exited at first target as planned.',
 		)
 
 		metrics = calculate_process_metrics(trade_date, trade_date)
@@ -725,6 +728,9 @@ class PerformanceGoalTests(TestCase):
 			trade_type=TradeType.LONG_CALL,
 			status=TradeStatus.CLOSED,
 			rule_review=RuleReview.FOLLOWED,
+			trade_notes='Waited for confirmation before entry.',
+			planned_stop_loss='4.00',
+			exit_notes='Exited at target as planned.',
 		)
 		PerformanceGoal.objects.create(
 			title='Rules first',
@@ -911,6 +917,8 @@ class WeeklyReviewTests(TestCase):
 			strategy_tags=['Opening drive'],
 			rule_review=RuleReview.FOLLOWED,
 			trade_notes='Waited for reclaim and took the retest entry.',
+			planned_stop_loss='4.00',
+			exit_notes='Exited at planned target after reclaim confirmed.',
 		)
 		entry = JournalEntry.objects.create(
 			title='Weekly lesson',
