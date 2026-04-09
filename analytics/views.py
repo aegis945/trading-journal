@@ -66,14 +66,27 @@ def performance_review(request):
 
     rule_break_counter = defaultdict(int)
     strategy_counter = defaultdict(int)
+    strategy_pnl = defaultdict(Decimal)
     for trade in closed_week_trades:
         for tag in (trade.rule_break_tags or []):
             rule_break_counter[tag] += 1
         for tag in (trade.strategy_tags or []):
             strategy_counter[tag] += 1
+            if trade.pnl is not None and not trade.is_paper_trade:
+                strategy_pnl[tag] += trade.pnl
 
     top_rule_breaks = _sorted_counter_items(rule_break_counter)
     top_strategy_tags = _sorted_counter_items(strategy_counter)
+
+    # Best / worst strategy by total P&L (real trades only)
+    strategy_pnl_items = [{'label': k, 'pnl': v} for k, v in strategy_pnl.items()]
+    best_strategy = max(strategy_pnl_items, key=lambda x: x['pnl']) if strategy_pnl_items else None
+    worst_strategy = min(strategy_pnl_items, key=lambda x: x['pnl']) if strategy_pnl_items else None
+    # Only show if there are actually winning / losing strategies
+    if best_strategy and best_strategy['pnl'] <= 0:
+        best_strategy = None
+    if worst_strategy and worst_strategy['pnl'] >= 0:
+        worst_strategy = None
 
     session_rows = []
     for offset in range(5):
@@ -142,6 +155,8 @@ def performance_review(request):
         'worst_trades': worst_trades,
         'top_rule_breaks': top_rule_breaks,
         'top_strategy_tags': top_strategy_tags,
+        'best_strategy': best_strategy,
+        'worst_strategy': worst_strategy,
         'session_rows': session_rows,
         'sessions': sessions,
         'journal_entries': journal_entries.order_by('-created_at'),

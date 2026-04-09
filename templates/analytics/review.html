@@ -135,6 +135,31 @@
           <p style="color:var(--text-secondary)">No rule breaks tagged this week.</p>
           {% endif %}
         </div>
+        {% if best_strategy or worst_strategy %}
+        <div>
+          <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-muted)">Strategy P&amp;L</p>
+          <div class="space-y-2">
+            {% if best_strategy %}
+            <div class="flex items-center justify-between rounded-lg px-3 py-2" style="background:var(--profit-glow);border:1px solid rgba(16,185,129,0.15)">
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-up" style="width:12px;height:12px;color:var(--profit);flex-shrink:0"></i>
+                <span class="text-xs" style="color:var(--text-primary)">{{ best_strategy.label }}</span>
+              </div>
+              <span class="mono text-xs font-semibold" style="color:var(--profit)">{{ best_strategy.pnl|pnl_str }}</span>
+            </div>
+            {% endif %}
+            {% if worst_strategy %}
+            <div class="flex items-center justify-between rounded-lg px-3 py-2" style="background:var(--loss-glow);border:1px solid rgba(244,63,94,0.15)">
+              <div class="flex items-center gap-2">
+                <i data-lucide="trending-down" style="width:12px;height:12px;color:var(--loss);flex-shrink:0"></i>
+                <span class="text-xs" style="color:var(--text-primary)">{{ worst_strategy.label }}</span>
+              </div>
+              <span class="mono text-xs font-semibold" style="color:var(--loss)">{{ worst_strategy.pnl|pnl_str }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
         <div>
           <p class="text-xs uppercase tracking-widest mb-2" style="color:var(--text-muted)">Journal Mix</p>
           {% if journal_type_counts %}
