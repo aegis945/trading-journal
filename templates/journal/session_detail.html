@@ -46,7 +46,7 @@
 
     <div class="card p-5 animate-in">
       <h2 class="text-sm font-semibold mb-4" style="color:var(--text-primary)">Pre-Market Notes</h2>
-      <form method="POST" id="session-save-form">
+      <form method="POST" id="session-save-form" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
@@ -78,6 +78,24 @@
           {% if not session.market_open_notes %}
           <p class="text-xs mt-1" style="color:var(--text-muted)">Capture the levels, conditions, or scenario that matter today.</p>
           {% endif %}
+        </div>
+
+        <div class="pt-4 mt-2" style="border-top:1px solid var(--border)">
+          <p class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Trading Plan</p>
+          <div class="mb-4">
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Plan Notes</label>
+            {{ form.trading_plan }}
+          </div>
+          <div class="mb-2">
+            <label class="block text-xs mb-1" style="color:var(--text-secondary)">Plan Screenshot</label>
+            {% if session.plan_screenshot %}
+            <div class="mb-2">
+              <img src="{{ session.plan_screenshot.url }}" alt="Trading plan" class="rounded-lg border max-w-full" style="border-color:var(--border);max-height:400px;object-fit:contain;">
+              <p class="text-xs mt-1" style="color:var(--text-muted)">Upload a new file below to replace it.</p>
+            </div>
+            {% endif %}
+            {{ form.plan_screenshot }}
+          </div>
         </div>
 
         <div class="pt-4 mt-2" style="border-top:1px solid var(--border)">
@@ -250,4 +268,21 @@
 
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('#session-save-form textarea').forEach(function (ta) {
+      ta.style.overflow = 'hidden';
+      ta.style.resize = 'none';
+      autoResize(ta);
+      ta.addEventListener('input', function () { autoResize(ta); });
+    });
+  });
+</script>
 {% endblock %}
