@@ -225,6 +225,13 @@ class GoalStatus(models.TextChoices):
 class TradingSession(models.Model):
     date                 = models.DateField(unique=True)
     market_open_notes    = models.TextField(blank=True)
+    trading_plan         = models.TextField(blank=True)
+    plan_screenshot      = models.ImageField(
+        upload_to='session_plans/',
+        null=True,
+        blank=True,
+        help_text='Optional chart/screenshot to accompany the trading plan',
+    )
     psychological_state  = models.IntegerField(
         null=True,
         blank=True,

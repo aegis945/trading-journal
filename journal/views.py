@@ -428,7 +428,7 @@ def session_detail(request, date):
     ).aggregate(total=Sum('pnl'))['total'] or Decimal('0')
 
     if request.method == 'POST':
-        form = TradingSessionForm(request.POST, instance=session)
+        form = TradingSessionForm(request.POST, request.FILES, instance=session)
         if form.is_valid():
             session = form.save()
             if not hasattr(session, 'daily_routine'):

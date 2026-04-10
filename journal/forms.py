@@ -126,7 +126,8 @@ class TradingSessionForm(forms.ModelForm):
         model  = TradingSession
         fields = [
             'market_bias', 'psychological_state', 'psychological_notes',
-            'vix_level', 'market_open_notes', 'session_notes', 'lessons_learned',
+            'vix_level', 'market_open_notes', 'trading_plan', 'plan_screenshot',
+            'session_notes', 'lessons_learned',
         ]
         widgets = {
             'market_bias':          forms.Select(attrs={'class': _SELECT_CLASSES}),
@@ -134,6 +135,8 @@ class TradingSessionForm(forms.ModelForm):
             'psychological_notes':  forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '2'}),
             'vix_level':            forms.NumberInput(attrs={'class': _INPUT_CLASSES, 'step': '0.01', 'placeholder': '18.5'}),
             'market_open_notes':    forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3'}),
+            'trading_plan':         forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3'}),
+            'plan_screenshot':      forms.ClearableFileInput(attrs={'class': _INPUT_CLASSES, 'accept': 'image/*'}),
             'session_notes':        forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3'}),
             'lessons_learned':      forms.Textarea(attrs={'class': _TEXTAREA_CLASSES, 'rows': '3'}),
         }
@@ -145,6 +148,8 @@ class TradingSessionForm(forms.ModelForm):
         self.fields['psychological_state'].widget.attrs['placeholder'] = 'Rate 1-5'
         self.fields['psychological_notes'].widget.attrs['placeholder'] = 'How are you showing up today?'
         self.fields['market_open_notes'].widget.attrs['placeholder'] = 'What matters most before the open?'
+        self.fields['trading_plan'].widget.attrs['placeholder'] = 'Key levels, setup triggers, rules for today\'s trade...'
+        self.fields['plan_screenshot'].required = False
         self.fields['session_notes'].widget.attrs['placeholder'] = 'What stood out after the session?'
         self.fields['lessons_learned'].widget.attrs['placeholder'] = 'What will you repeat or change next time?'
 
