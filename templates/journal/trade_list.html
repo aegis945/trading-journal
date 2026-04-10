@@ -5,14 +5,14 @@
 
 {% block header_actions %}
 <a href="{% url 'import_upload' %}"
-   class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+   class="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
    style="border-color:var(--border);color:var(--text-secondary);"
    onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text-primary)'"
    onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">
   <i data-lucide="upload" style="width:11px;height:11px;"></i> Import CSV
 </a>
 <a href="{% url 'trade_export' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
-   class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+   class="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
    style="border-color:var(--border);color:var(--text-secondary);"
    onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--text-primary)'"
    onmouseout="this.style.background='';this.style.color='var(--text-secondary)'">

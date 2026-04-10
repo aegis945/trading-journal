@@ -24,7 +24,7 @@
       <!-- Section: Basic -->
       <div class="mb-6">
         <h3 class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Trade Info</h3>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">Session Date *</label>
             {{ form.trade_date }}
@@ -63,7 +63,7 @@
       <!-- Section: Pricing -->
       <div class="mb-6">
         <h3 class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Entry / Exit</h3>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">
               Entry Price * <span style="color:var(--text-muted)">(per share)</span>
@@ -110,7 +110,7 @@
             Fetch from TWS
           </button>
         </div>
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">Delta</label>
             {{ form.delta_entry }}
@@ -134,7 +134,7 @@
       <!-- Section: Risk -->
       <div class="mb-6">
         <h3 class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Risk Management</h3>
-        <div class="grid grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">
               Stop Loss <span style="color:var(--text-muted)">(per share)</span>
@@ -177,7 +177,7 @@
       <!-- Section: Notes & Tags -->
       <div class="mb-6">
         <h3 class="text-xs font-medium uppercase tracking-wider mb-3" style="color:var(--text-muted)">Notes &amp; Classification</h3>
-        <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-xs mb-1" style="color:var(--text-secondary)">Strategy Tags</label>
             {{ form.strategy_tags_text }}
